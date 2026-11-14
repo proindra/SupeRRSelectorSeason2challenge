@@ -94,6 +94,14 @@ Completed assumption-based runs are preserved separately in
 is `artifacts\exploratory\0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4\`. Existing run folders are retained
 for their provenance; do not delete them as temporary files.
 
+### Source match records vs pressure-analysis coverage
+
+The current `matches.csv` has **883 rows and 883 unique match IDs**. The saved pressure-validation
+count of **818** is not the source-file row count: 820 match IDs have non-null pressure states, and
+two matches with unresolved winners are excluded from validation, leaving 818. Another 63 source
+match IDs have no non-null pressure-state rows. The `unresolved_winner_rows` value of 63 counts
+pressure-state rows from those two matches, not 63 matches.
+
 ## Installation and local dashboard preview
 
 Run these commands in Windows PowerShell from the project directory:
@@ -140,7 +148,7 @@ analysis dependencies or rerun the exploratory pipeline.
 
 ## Dashboard sections
 
-- **Overview:** compact match/data coverage, featured saved performers, quick observations, and a
+- **Overview:** featured saved performers, quick observations, and a
   collapsible Data Quality & Methodology section.
 - **Batting Under Pressure:** saved batter rankings, pressure-vs-normal comparisons, charts, and
   player profiles.

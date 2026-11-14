@@ -340,11 +340,6 @@ function renderRankingPage(role, technical = false) {
 }
 
 function renderOverview() {
-  const coverage = dashboardData.coverage;
-  const qualityTables = dashboardData.quality.tables;
-  const competitionCount = qualityTables.competitions?.rows;
-  const seasons = (dashboardData.quality.schemas.competitions || [])
-    .find((column) => column.column === "season")?.distinct_non_null;
   const batterRows = dashboardData.rankings.batter.full;
   const bowlerRows = dashboardData.rankings.bowler.full;
   const rankedBatters = batterRows.filter((row) => isNumeric(row.rank) && Number(row.rank) >= 1);
@@ -365,13 +360,6 @@ function renderOverview() {
       <p>Explore saved batting and bowling performance in high-pressure T20 chases.</p>
       <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
     </section>
-    ${sectionTitle("At a glance", "Coverage from saved source audits and pressure analysis")}
-    <div class="grid grid-4">
-      ${kpi("Matches analyzed", integer(coverage.distinct_matches), "Completed exploratory run")}
-      ${kpi("Pressure deliveries", integer(coverage.valid_delivery_rows), "Included in pressure assessment", true)}
-      ${kpi("Competitions", integer(competitionCount), "Source audit coverage")}
-      ${kpi("Seasons", integer(seasons), "Distinct non-null season values", true)}
-    </div>
     ${sectionTitle("Featured performers", "Leaders follow the saved composite ranking")}
     <div class="grid grid-2">
       ${renderFeatured(batterTop, "batter")}
@@ -597,10 +585,10 @@ function renderPressure() {
       <div class="formula">P = ${number(weights.required_rate, 2)}R + ${number(weights.wickets_lost, 2)}W + ${number(weights.chase_difficulty, 2)}D + ${number(weights.innings_stage, 2)}S</div>
       <p class="muted">Components are clamped to [0, 1]. High pressure begins at P ≥ ${number(config.high_pressure_threshold, 2)}; clutch pressure begins at P ≥ ${number(config.clutch_threshold, 2)}.</p>
       <div class="grid grid-4">
-        ${kpi("Analyzed matches", integer(coverage.distinct_matches))}
+        ${kpi("Matches in pressure validation", integer(coverage.distinct_matches))}
         ${kpi("Valid delivery rows", integer(coverage.valid_delivery_rows), "", true)}
         ${kpi("High-pressure share", percentage(coverage.high_pressure_delivery_share))}
-        ${kpi("Unresolved winner rows", integer(coverage.unresolved_winner_rows), "", true)}
+        ${kpi("Pressure rows with unresolved winner", integer(coverage.unresolved_winner_rows), "", true)}
       </div>
     </section>
     ${sectionTitle("Observed win-rate gradient", "Saved match-level confidence bounds are listed in the table")}
