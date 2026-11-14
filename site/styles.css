@@ -788,6 +788,18 @@ h3 {
   white-space: nowrap;
 }
 
+.data-table th.conditional-rr-angle-heading {
+  min-width: 250px;
+}
+
+.data-table td.conditional-rr-angle-cell {
+  font-variant-numeric: normal;
+  line-height: 1.45;
+  max-width: 340px;
+  min-width: 250px;
+  white-space: normal;
+}
+
 .data-table tr:last-child td {
   border-bottom: 0;
 }

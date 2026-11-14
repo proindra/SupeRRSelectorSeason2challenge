@@ -18,8 +18,40 @@ const pageNames = {
   quality: "DATA QUALITY"
 };
 
+const conditionalRrAngles = {
+  batter: {
+    "tim david": "High pressure-run output; consider for a late-innings role if RR needs one.",
+    "towhid hridoy": "T20I-only signal; a scouting lead, not IPL-proven pressure evidence.",
+    "shreyas iyer": "Strong cross-context pressure scoring; verify role fit and current squad need.",
+    "shashank singh": "IPL-only pressure sample; consider if domestic batting depth is needed.",
+    "david miller": "Highest pressure-run volume in this list; a high-volume comparator, not a lock.",
+    "rinku singh": "Cross-context scoring profile; recheck current role and auction availability.",
+    "dasun shanaka": "Fit depends on role, overseas slot, and squad balance.",
+    "naman dhir": "High shrunk strike rate, but only 112 pressure balls and 8 innings; validate volume.",
+    "tristan stubbs": "Substantial pressure-ball sample, but weaker Top-10 repeatability; use cautiously.",
+    "nicholas pooran": "High pressure-run total, but lower bootstrap repeatability; not a stable-rank claim."
+  },
+  bowler: {
+    "sufiyan muqeem": "Strong T20I repeat signal; no IPL-only sample in this ranking, so translation needs scouting.",
+    "mohammad nawaz": "Highest bootstrap frequency here, but T20I-only; confirm IPL role and availability.",
+    "abrar ahmed": "Strong T20I pressure profile; IPL suitability and role need separate verification.",
+    "sunil narine": "Best IPL-only repeat signal among these bowlers; conditional fit if role and availability align.",
+    "mohit sharma": "IPL-only wicket and consistency evidence; Top-10 repeatability is more moderate.",
+    "mitchell santner": "Large cross-context sample; consider only if the squad needs a compatible role profile.",
+    "prasidh krishna": "Cross-context pressure wickets; repeatability is moderate, so compare with current evidence.",
+    "shadab khan": "T20I-only signal; IPL translation, role, and overseas-slot fit need review.",
+    "yuzvendra chahal": "Largest wicket volume in this list; lower repeatability makes him a benchmark, not an automatic pick.",
+    "matheesha pathirana": "Pressure-wicket volume is notable, but bootstrap repeatability is lowest in this Top 10."
+  }
+};
+
 let dashboardData;
 let currentPage = "overview";
+
+function conditionalRrAngle(role, playerName) {
+  const key = String(playerName ?? "").trim().toLocaleLowerCase();
+  return conditionalRrAngles[role][key] ?? "";
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -112,12 +144,16 @@ function table(rows, columns, options = {}) {
       const cell = column.key === "rank"
         ? rankCell(value, blue)
         : escapeHtml(valueForCell(column.key, value));
-      return `<td>${cell}</td>`;
+      const className = column.key === "conditional_rr_angle" ? ' class="conditional-rr-angle-cell"' : "";
+      return `<td${className}>${cell}</td>`;
     }).join("")}</tr>`).join("");
   return `
     <div class="table-wrap">
       <table class="data-table">
-        <thead><tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr></thead>
+        <thead><tr>${columns.map((column) => {
+          const className = column.key === "conditional_rr_angle" ? ' class="conditional-rr-angle-heading"' : "";
+          return `<th${className}>${escapeHtml(column.label)}</th>`;
+        }).join("")}</tr></thead>
         <tbody>${body}</tbody>
       </table>
     </div>`;
@@ -255,26 +291,33 @@ function rankingColumns(role, technical) {
       { key: "consistency", label: "Consistency" },
       { key: "composite_score", label: "Score" }
     ];
-  return common.concat(metrics);
+  return common.concat(metrics, [
+    { key: "conditional_rr_angle", label: "Conditional RR angle" }
+  ]);
 }
 
 function renderRankingPage(role, technical = false) {
   const info = dashboardData.rankings[role];
   const roleTitle = role === "batter" ? "Batting Under Pressure" : "Bowling Under Pressure";
   const title = technical ? `Technical ${roleTitle}` : roleTitle;
-  const fullRows = info.full;
+  const annotateRows = (rows) => rows.map((row) => ({
+    ...row,
+    conditional_rr_angle: conditionalRrAngle(role, row.player_name)
+  }));
+  const fullRows = technical ? info.full : annotateRows(info.full);
+  const topRows = technical ? info.top10 : annotateRows(info.top10);
   const groups = competitionOptions(fullRows);
   const columns = rankingColumns(role, technical);
   const metricKey = role === "batter" ? "pressure_strike_rate" : "pressure_economy";
   const chartTitle = role === "batter" ? "Top pressure strike rates" : "Lowest pressure economy";
-  const chartRows = [...info.top10]
+  const chartRows = [...topRows]
     .sort((a, b) => role === "batter"
       ? Number(b[metricKey] || 0) - Number(a[metricKey] || 0)
       : Number(a[metricKey] || Infinity) - Number(b[metricKey] || Infinity));
   pageRoot.innerHTML = `
     ${heading(title, technical
       ? "Full saved metrics and ranking fields. No ranking is recalculated in this site."
-      : "Search and filter the saved leaderboard by comparison group. These are assumption-based, exploratory rankings.")}
+      : "Search and filter the saved leaderboard by comparison group. Rankings are exploratory; conditional RR angles are role-fit prompts for the saved Top 10, not auction recommendations. Player availability is not modeled.")}
     ${technical ? "" : `
       <div class="grid grid-2" style="margin-top:16px">
         <section class="card chart-card">
@@ -334,7 +377,7 @@ function renderRankingPage(role, technical = false) {
     technicalRole.addEventListener("change", () => renderRankingPage(technicalRole.value, true));
   }
   document.getElementById("ranking-download").addEventListener("click", () => {
-    downloadCsv(`${role}_${technical ? "full_rankings" : "top_10"}.csv`, technical ? fullRows : info.top10);
+    downloadCsv(`${role}_${technical ? "full_rankings" : "top_10"}.csv`, technical ? fullRows : topRows);
   });
   render();
 }
