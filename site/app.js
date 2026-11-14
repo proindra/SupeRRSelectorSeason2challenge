@@ -362,21 +362,15 @@ function renderOverview() {
       <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings are exploratory; player availability is not modeled.</p>
       <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
     </section>
-    ${sectionTitle("Featured performers", "Leaders follow the saved composite ranking")}
-    <div class="grid grid-2">
-      ${renderFeatured(batterTop, "batter")}
-      ${renderFeatured(bowlerTop, "bowler")}
+    ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
+    <div class="grid grid-2 overview-profile-grid">
+      ${renderOverviewProfile("batter", batterTop, iplBatterRepeat)}
+      ${renderOverviewProfile("bowler", bowlerTop, iplBowlerRepeat)}
     </div>
-    ${sectionTitle("RR auction lens", "Compare overall leaders with IPL-only repeatability")}
-    <div class="grid grid-2">
-      ${renderIplRepeatProfile(iplBatterRepeat, "batter")}
-      ${renderIplRepeatProfile(iplBowlerRepeat, "bowler")}
-    </div>
-    <section class="callout blue">
-      <p><strong>Why the bowling profiles differ:</strong> ${bowlerTop ? `${escapeHtml(bowlerTop.player_name)} leads the overall composite ranking (${escapeHtml(bowlerTop.comparison_context || "comparison group unavailable")}).` : "The featured bowler follows the overall composite ranking."} The IPL-only card above answers a different question: which IPL-only bowler in the saved Top 10 most often remains in the Top 10 across bootstrap resamples.</p>
-      <p>Bootstrap frequency describes ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.</p>
+    <section class="callout blue overview-note">
+      <strong>How to read this:</strong> the overall composite ranking combines comparison contexts; the repeat signal is filtered to IPL-only profiles in the saved Top 10. Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.
     </section>
-    ${sectionTitle("A quick read", "Descriptive leaders from saved full rankings")}
+    ${sectionTitle("Other metric leaders", "Descriptive leaders from saved full rankings")}
     <div class="grid grid-2">
       <section class="card">
         <div class="eyebrow">FASTEST PRESSURE SCORING</div>
@@ -410,40 +404,35 @@ function getIplRepeatProfile(role) {
   return profiles[0] || null;
 }
 
-function renderIplRepeatProfile(profile, role) {
-  if (!profile) {
-    return `<section class="card"><p class="muted">No IPL-only ${role} profile is available in the saved Top 10.</p></section>`;
-  }
+function renderOverviewProfile(role, overallLeader, iplRepeat) {
   const batter = role === "batter";
-  const row = profile.row;
-  const exposure = batter
-    ? `${integer(row.pressure_runs)} pressure runs · ${integer(row.pressure_balls)} pressure balls`
-    : `${integer(row.pressure_wickets)} pressure wickets · ${integer(row.legal_pressure_balls)} legal pressure balls`;
+  const overallExposure = overallLeader
+    ? batter
+      ? `${integer(overallLeader.pressure_runs)} pressure runs`
+      : `${integer(overallLeader.pressure_wickets)} pressure wickets`
+    : "No overall leader available";
+  const repeatRow = iplRepeat ? iplRepeat.row : null;
+  const repeatExposure = repeatRow
+    ? batter
+      ? `${integer(repeatRow.pressure_runs)} runs · ${integer(repeatRow.pressure_balls)} balls`
+      : `${integer(repeatRow.pressure_wickets)} wickets · ${integer(repeatRow.legal_pressure_balls)} legal balls`
+    : "No IPL-only Top 10 profile available";
   return `
-    <section class="card">
-      <div class="eyebrow">IPL-ONLY ${batter ? "BATTER" : "BOWLER"} REPEAT SIGNAL</div>
-      <h2>${escapeHtml(row.player_name)}</h2>
-      <p class="inline-stat">${escapeHtml(percentage(profile.frequency))}<span class="muted"> bootstrap Top-10 frequency</span></p>
-      <p class="muted">Overall rank ${integer(row.rank)} · ${escapeHtml(exposure)}</p>
-    </section>`;
-}
-
-function renderFeatured(row, role) {
-  if (!row) {
-    return `<section class="card"><p class="muted">No saved ${role} leader is available.</p></section>`;
-  }
-  const batter = role === "batter";
-  const value = batter ? row.pressure_runs : row.pressure_wickets;
-  const descriptor = batter ? "pressure runs" : "pressure wickets";
-  return `
-    <section class="card player-card">
-      <div class="player-card-top">
-        <span class="player-avatar${batter ? "" : " blue"}">${batter ? "BAT" : "BOWL"}</span>
-        <span><small class="${batter ? "" : "blue-text"}">TOP PRESSURE ${batter ? "BATTER" : "BOWLER"}</small><strong>${escapeHtml(row.player_name)}</strong></span>
-      </div>
-      <div class="player-card-body">
-        <div class="player-card-stat">${escapeHtml(integer(value))}<small>${descriptor} · rank ${escapeHtml(integer(row.rank))}</small></div>
-        <button class="card-link" data-go="${batter ? "batting" : "bowling"}">View rankings →</button>
+    <section class="card overview-profile-card${batter ? " batter" : " bowler"}">
+      <div class="eyebrow">${batter ? "BATTER" : "BOWLER"} PRESSURE PROFILE</div>
+      <div class="overview-profile-pair">
+        <div class="overview-profile-item">
+          <span class="overview-profile-label">Overall leader · rank ${overallLeader ? integer(overallLeader.rank) : "—"}</span>
+          <strong>${overallLeader ? escapeHtml(overallLeader.player_name) : "Unavailable"}</strong>
+          <p class="overview-profile-stat">${escapeHtml(overallExposure)}</p>
+          <small>${escapeHtml(overallLeader ? overallLeader.comparison_context || "scope unavailable" : "Saved ranking")}</small>
+        </div>
+        <div class="overview-profile-item ipl-only">
+          <span class="overview-profile-label">IPL-only repeat signal</span>
+          <strong>${repeatRow ? escapeHtml(repeatRow.player_name) : "Unavailable"}</strong>
+          <p class="overview-profile-stat">${iplRepeat ? `${escapeHtml(percentage(iplRepeat.frequency))} bootstrap Top-10` : "No repeat frequency"}</p>
+          <small>${repeatRow ? `Rank ${integer(repeatRow.rank)} · ${escapeHtml(repeatExposure)}` : escapeHtml(repeatExposure)}</small>
+        </div>
       </div>
     </section>`;
 }
