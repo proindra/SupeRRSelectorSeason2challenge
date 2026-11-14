@@ -1,9 +1,9 @@
-# Batman Plays Under Pressure
+# SupeRR Selector: Plays Under Pressure
 
 SupeRR Selector is a Python cricket analytics project for studying batter and bowler performance
 in high-pressure T20 chases. It includes a reproducible data pipeline, audit and reconciliation
-reports, saved exploratory rankings, a coach-friendly Streamlit dashboard, and a static
-HTML/CSS/JavaScript dashboard for GitHub Pages.
+reports, saved exploratory rankings, and a coach-friendly static HTML/CSS/JavaScript dashboard
+for GitHub Pages.
 
 > **Result scope:** This project produces and displays **EXPLORATORY** results only. Scoring
 > mappings are recorded assumptions, not source-confirmed definitions; audit findings are retained
@@ -38,7 +38,7 @@ analytics pipeline, bootstrap, or sensitivity analyses.
 
 - Python 3.12 (project minimum: Python 3.11)
 - Pandas, NumPy, PyArrow
-- Streamlit and Plotly
+- HTML, CSS, and JavaScript for the static dashboard
 - Pydantic and PyYAML
 - SciPy and scikit-learn for pressure diagnostics
 - ReportLab for PDF reports
@@ -254,4 +254,4 @@ uv run ruff check .
 uv run mypy .
 ```
 
-This is a Streamlit application; there is no separate JavaScript frontend build step.
+The dashboard is a static HTML/CSS/JavaScript site; no separate frontend build step is required.
