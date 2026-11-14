@@ -1,0 +1,124 @@
+version: "1.0"
+random_seed: 42
+
+source_fields:
+  deliveries:
+    match_id: match_id
+    innings: innings
+    over_number: overid
+    ball_number: over_ball_num
+    delivery_sequence: innings_ball_num
+    batting_team_id: batting_team_id
+    bowling_team_id: bowling_team_id
+    striker_id: striker_id
+    non_striker_id: non_striker_id
+    bowler_id: bowler_id
+    batter_runs: runs
+    wicket_flag: is_wicket
+    dismissal_type: dismissal_type
+    dismissed_player_id: dismissed_player_id
+    extras_type: extras_type
+    extras_1: extras1_runs
+    extras_2: extras_2_runs
+    is_four: is_four
+    is_six: is_six
+    delivery_time: delivery_ist_time
+  matches:
+    match_id: match_id
+    competition_id: comp_id
+    team1_id: home_team_id
+    team2_id: away_team_id
+    winner_team_id: win_team_id
+    result: result
+    revised_target: revised_target
+    first_innings_revised_overs: first_inn_revised_overs
+    second_innings_revised_overs: second_inn_revised_overs
+    venue_id: venue_id
+    is_knockout: knock_out
+    stage: stage
+    match_date: match_date
+  competitions:
+    competition_id: comp_id
+    competition_name: comp_name
+    format: match_format
+    season: season
+  player_team_mapping:
+    competition_id: comp_id
+    team_id: team_id
+    team_name: team_name
+    player_id: player_id
+    player_name: player_name
+  playing_eleven:
+    match_id: match_id
+    team_id: team_id
+    player_id: player_id
+    is_played: is_played
+    is_captain: is_captain
+    is_wicketkeeper: is_wk
+    is_impact: is_impact
+    is_impact_off: is_impact_off
+
+scoring:
+  batter_runs_excludes_extras_confirmed: false
+  extras:
+    none: ["None"]
+    wide: ["wide"]
+    no_ball: ["Overstep"]
+    byes: ["byes"]
+    leg_byes: ["legbyes"]
+    penalty: ["Penalty"]
+    other: ["other"]
+    unresolved: []
+  dismissals:
+    bowler_credited: ["Bowled", "Caught", "Caught and Bowled", "LBW", "Stumped", "Hit Wicket", "Stump"]
+    batter_dismissed: ["Bowled", "Caught", "Caught and Bowled", "LBW", "Stumped", "Hit Wicket", "RunOut", "Obstructing the field", "Obstracting the field", "Retire Out", "Stump"]
+    non_bowler_credited: ["RunOut", "Obstructing the field", "Obstracting the field", "Retire Out"]
+    unresolved: []
+  legal_delivery_categories_confirmed: false
+  target_timing_reconstructible: false
+  super_over_innings_verified: true
+
+pressure:
+  weights:
+    required_rate: 0.35
+    wickets_lost: 0.25
+    chase_difficulty: 0.25
+    innings_stage: 0.15
+  required_rate_cap: 18.0
+  maximum_assumed_runs_per_ball: 2.0
+  high_pressure_threshold: 0.60
+  clutch_threshold: 0.80
+  scheduled_legal_balls: 120
+  exclude_super_overs: true
+  main_run_excludes_uncertain_revised_target_matches: true
+
+samples:
+  batter_pressure_balls: 60
+  batter_pressure_innings: 8
+  bowler_legal_pressure_balls: 60
+  bowler_pressure_spells: 8
+  minimum_balls_per_innings_or_spell: 6
+  phase_support_balls: 30
+  matchup_group_balls: 200
+
+reliability:
+  default_k_balls: 100
+  sensitivity_k: [50, 100, 200]
+
+robustness:
+  pressure_thresholds: [0.50, 0.60, 0.70]
+  clutch_thresholds: [0.70, 0.80, 0.90]
+  bootstrap_replicates: 500
+  bootstrap_confidence_level: 0.90
+  random_seed: 42
+  stability_flag_threshold: 0.50
+  weight_perturbation: 0.20
+
+phases:
+  powerplay: [1, 6]
+  middle: [7, 15]
+  death: [16, 20]
+
+competition_groups:
+  ipl_name_tokens: ["Indian Premier League", "IPL"]
+  t20i_format: "T20I"

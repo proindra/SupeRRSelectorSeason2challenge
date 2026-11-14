@@ -1,0 +1,258 @@
+# Batman Plays Under Pressure
+
+SupeRR Selector is a Python cricket analytics project for studying batter and bowler performance
+in high-pressure T20 chases. It includes a reproducible data pipeline, audit and reconciliation
+reports, saved exploratory rankings, a coach-friendly Streamlit dashboard, and a static
+HTML/CSS/JavaScript dashboard for GitHub Pages.
+
+> **Result scope:** This project produces and displays **EXPLORATORY** results only. Scoring
+> mappings are recorded assumptions, not source-confirmed definitions; audit findings are retained
+> as diagnostics and do not determine whether exploratory analysis can run.
+
+The visual theme uses colors inspired by Rajasthan Royals and does not imply official affiliation.
+
+## Project objectives
+
+- Inspect and audit the six supplied cricket CSV files without modifying them.
+- Reconstruct pre-delivery states for second-innings chases.
+- Calculate pressure batting and bowling metrics and rank eligible players.
+- Keep source evidence and assumption-based exploratory results distinct.
+- Present saved results in cricket terminology for coaches and project evaluators.
+
+## Architecture
+
+```text
+CSV inputs
+  -> ingestion and source mapping
+  -> audit, evidence, and score reconciliation
+  -> pre-delivery chase states and pressure classification
+  -> batter/bowler metrics and eligibility
+  -> competition-aware scoring and saved rankings
+  -> dashboard reads saved CSV, JSON, and Parquet outputs
+```
+
+The dashboard does not recalculate ranking formulas. Starting it does not run the audit,
+analytics pipeline, bootstrap, or sensitivity analyses.
+
+## Technology
+
+- Python 3.12 (project minimum: Python 3.11)
+- Pandas, NumPy, PyArrow
+- Streamlit and Plotly
+- Pydantic and PyYAML
+- SciPy and scikit-learn for pressure diagnostics
+- ReportLab for PDF reports
+- `uv` for environment and lockfile management
+- pytest, Ruff, and mypy for development checks
+
+## Directory guide
+
+```text
+config/
+  default.yaml                 Source mappings and analysis settings
+data/
+  raw/                         Six original CSV inputs (not modified)
+artifacts/
+  exploratory/<run-id>/
+    processed/                 Exploratory pressure states
+    rankings/                  Saved player rankings and optional robustness outputs
+    reports/                   Run manifest, audit evidence, and reports
+src/suprr/
+  ingestion/                   CSV loading, mapping, and manifests
+  validation/                  Audit, reconciliation, and ranking assessment
+  features/                    Chase states, pressure, and match phases
+  metrics/                     Batter, bowler, and competition metrics
+  ranking/                     Eligibility, shrinkage, and composite ranks
+  robustness/                  Optional sensitivity, bootstrap, and scenarios
+  dashboard/app.py             Streamlit pages and saved-result loading
+scripts/
+  run_pipeline.py              Run the exploratory analysis pipeline
+  validate_rankings.py         Separate optional exploratory ranking assessment
+tests/                         Unit and integration tests
+docs/                          Scoring decisions and validation methodology
+site/                          Static HTML, CSS, JavaScript, and published dashboard data
+```
+
+## Data and saved results
+
+Place the following files in `data\raw\`:
+
+1. `ball_by_ball.csv`
+2. `competition_team_player_mapping.csv`
+3. `competitions.csv`
+4. `matches.csv`
+5. `playing_eleven.csv`
+6. `teams.csv`
+
+Original inputs are not changed by the pipeline. Each analysis run writes its audit,
+investigation, and reconciliation reports under its
+`artifacts\exploratory\<run-id>\reports\` folder.
+The raw dataset files are excluded by `.gitignore`; obtain them separately and check redistribution
+rights before publishing them.
+Completed assumption-based runs are preserved separately in
+`artifacts\exploratory\<run-id>\`. The dashboard selects the most recently completed run with an
+`EXPLORATORY_COMPLETE` manifest and loads its saved ranking files. The current saved complete run
+is `artifacts\exploratory\0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4\`. Existing run folders are retained
+for their provenance; do not delete them as temporary files.
+
+## Installation and dashboard launch
+
+Run these commands in Windows PowerShell from the project directory:
+
+```powershell
+uv python install 3.12
+uv sync --all-groups
+uv run streamlit run src\suprr\dashboard\app.py
+```
+
+Open the local URL printed by Streamlit, normally `http://localhost:8501`. For an ordinary
+presentation, install dependencies and launch the dashboard; **do not run the analysis pipeline
+unless the input data or configuration has changed**.
+
+## GitHub Pages dashboard
+
+The GitHub Pages version is a static site; it does not run Streamlit or Python on the host. It
+uses the saved snapshot in `site\data\dashboard.json` and includes aggregate rankings, pressure
+diagnostics, audit evidence, and match/phase player summaries. Raw source CSVs and delivery-level
+rows are not published.
+
+To refresh the static snapshot after producing a completed local exploratory run:
+
+```powershell
+uv run python scripts\build_static_dashboard.py
+uv run python scripts\validate_static_dashboard.py
+```
+
+The export reads saved run artifacts only; it does not run the analysis pipeline, bootstrap,
+sensitivity, or scenario validation. Commit the updated `site\data\dashboard.json` to publish the
+new snapshot. To preview it locally:
+
+```powershell
+uv run python -m http.server 8000 --directory site
+```
+
+The GitHub Actions workflows run quality checks and deploy the `site\` directory on pushes to
+`main`. In the repository, set **Settings → Pages → Build and deployment → Source** to
+**GitHub Actions**. The expected site URL is
+`https://proindra.github.io/SupeRRSelectorSeason2challenge/`.
+
+The Actions test job excludes optional bootstrap/resampling tests. Deployment does not install
+analysis dependencies or rerun the exploratory pipeline.
+
+## Dashboard sections
+
+- **Overview:** compact match/data coverage, featured saved performers, quick observations, and a
+  collapsible Data Quality & Methodology section.
+- **Batting Under Pressure:** saved batter rankings, pressure-vs-normal comparisons, charts, and
+  player profiles.
+- **Bowling Under Pressure:** saved bowler rankings, economy/wicket/dot-ball comparisons, charts,
+  and player profiles.
+- **Coach Insights:** dataset-specific metric leaders drawn only from the saved Top 10 batter and
+  bowler leaderboards.
+- **Player Explorer:** saved player profiles and available match/phase views.
+- **Pressure Model:** saved pressure diagnostics and chase outcome summaries.
+- **Technical Rankings and Robustness:** detailed metrics and any robustness outputs already saved.
+- **Data Quality & Methodology:** source evidence, exclusions, unresolved scoring assumptions, and reports.
+
+## Analysis workflow
+
+Run analysis only when refreshing results is required. From the project root:
+
+```powershell
+uv run python scripts\run_pipeline.py
+```
+
+The pipeline always writes a new **EXPLORATORY** run under `artifacts\exploratory\`; it does not
+produce scientifically validated rankings. Source audit findings are retained as diagnostics and
+do not block exploratory analysis. The pressure-model quality check remains part of the analysis.
+Full ranking robustness is off by default; `--full-robustness` enables metric and scoring-mapping sensitivity,
+scenario stability, match bootstrap, and split-half analyses. These can be expensive and should
+only be used deliberately.
+
+The core workflow is:
+
+1. Load and normalize the six source files.
+2. Write source audits, investigations, and reconciliation evidence.
+3. Apply the configured exploratory assumptions and retain source-audit evidence.
+4. Reconstruct chase states and evaluate pressure before each delivery.
+5. Calculate batter and bowler metrics, sample eligibility, and exploratory rankings.
+6. Save outputs with run metadata and provenance.
+7. Load saved results in the dashboard.
+
+## Pressure and ranking methodology
+
+Pressure is assessed before the current delivery. The configured score combines normalized
+required run rate (`R`), wickets lost (`W`), chase difficulty (`D`), and innings stage (`S`):
+
+```text
+P = 0.35R + 0.25W + 0.25D + 0.15S
+```
+
+The primary high-pressure threshold is `P >= 0.60`; the clutch threshold is `P >= 0.80`.
+Pressure and scoring rules are defined in `config\default.yaml`. The source does not confirm all
+scoring meanings, so these rules do not make current rankings source-validated.
+
+Player ranking uses competition-group comparisons, sample eligibility, exposure-based shrinkage
+(`k = 100`), and weighted metric z-scores. Each pressure innings/spell needs at least 6 pressure
+balls. A batter needs at least 60 pressure balls across 8 pressure innings; a bowler needs at least
+60 legal pressure balls across 8 pressure spells.
+
+The batter score weights are: pressure strike rate `+0.25`, pressure runs `+0.15`, strike-rate
+change `+0.15`, boundary rate `+0.10`, consistency `+0.10`, scoreless-ball rate `-0.10`, and
+dismissal rate `-0.15`.
+
+The bowler score weights are: pressure economy `-0.25`, scoreless-ball rate `+0.20`, pressure
+wickets `+0.15`, boundary-conceded rate `-0.15`, regularised bowling average `-0.05`, regularised
+bowling strike rate `-0.05`, economy improvement `+0.10`, and consistency `+0.05`.
+
+The detailed scoring assumptions and evidence are in `docs\scoring_decisions.md` and
+`docs\exploratory_assumptions.md`. Validation methodology is in
+`docs\ranking_validation_methodology.md`.
+
+## Optional exploratory ranking validation
+
+The statistical ranking assessment is a separate, explicit command. It does not update the
+input rankings:
+
+```powershell
+uv run python scripts\validate_rankings.py `
+  --run-dir artifacts\exploratory\0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4 `
+  --replicates 500 --seed 42
+```
+
+It performs mathematical checks, match-cluster bootstrap, and weight/sample-threshold sensitivity.
+It can be computationally expensive and is **not** part of dashboard startup. Results are written
+under that run's `validation\` directory and labelled as exploratory/robustness-assessed; they do
+not establish source semantics or scientific validity.
+
+## Output locations
+
+- `data\raw\`: original cricket data files, never modified by the pipeline.
+- `artifacts\rankings\`: a legacy location retained for compatibility; the
+  dashboard does not use them for rankings.
+- `artifacts\exploratory\<run-id>\rankings\`: exploratory Top 10 and full rankings, plus optional
+  robustness outputs.
+- `artifacts\exploratory\<run-id>\reports\`: exploratory run manifest and supporting reports.
+- `artifacts\exploratory\<run-id>\validation\`: outputs of the separate ranking validator.
+
+## Limitations and future work
+
+- The original dataset publisher/version and authoritative scoring codebook remain unresolved.
+- Extras, legal-delivery, bowler-concession, and some dismissal mappings are exploratory
+  assumptions, not source-confirmed definitions.
+- Available match totals are not independent scorecards; reconciliation evidence must not be
+  described as independent confirmation.
+- The project has no validated-ranking workflow; results remain exploratory until authoritative
+  source evidence is available.
+- Future improvements should prioritize authoritative scoring documentation and independent
+  scorecards before interpreting rankings as validated.
+
+## Essential checks
+
+```powershell
+uv run pytest
+uv run ruff check .
+uv run mypy .
+```
+
+This is a Streamlit application; there is no separate JavaScript frontend build step.

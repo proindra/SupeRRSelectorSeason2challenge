@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111a33">
+    <meta
+      name="description"
+      content="Explore saved exploratory batting and bowling results from high-pressure T20 chases."
+    >
+    <title>SupeRR Selector | Plays Under Pressure</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#overview" aria-label="SupeRR Selector home">
+          <span class="brand-mark">SR</span>
+          <span>
+            <strong>SupeRR Selector</strong>
+            <small>Plays Under Pressure</small>
+          </span>
+        </a>
+        <div class="sidebar-label">DASHBOARD</div>
+        <nav class="navigation" aria-label="Dashboard sections">
+          <button class="nav-link active" data-page="overview"><span>01</span> Overview</button>
+          <button class="nav-link" data-page="batting"><span>02</span> Batting</button>
+          <button class="nav-link" data-page="bowling"><span>03</span> Bowling</button>
+          <button class="nav-link" data-page="insights"><span>04</span> Coach insights</button>
+          <button class="nav-link" data-page="players"><span>05</span> Player explorer</button>
+          <button class="nav-link" data-page="pressure"><span>06</span> Pressure model</button>
+          <button class="nav-link" data-page="technical"><span>07</span> Technical rankings</button>
+          <button class="nav-link" data-page="robustness"><span>08</span> Robustness</button>
+          <button class="nav-link" data-page="quality"><span>09</span> Data quality</button>
+        </nav>
+        <div class="sidebar-foot">
+          <span class="status-dot"></span>
+          <span>Saved exploratory results</span>
+          <small id="sidebar-run">Loading run…</small>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="menu-button" id="menu-button" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="breadcrumbs">SUPERR SELECTOR <span>/</span> <strong id="section-name">OVERVIEW</strong></div>
+          <div class="topbar-status"><span class="status-dot"></span> EXPLORATORY ONLY</div>
+        </header>
+        <div id="page-root" class="page-root" aria-live="polite">
+          <div class="loading-card">
+            <span class="loader"></span>
+            <p>Loading saved dashboard results…</p>
+          </div>
+        </div>
+        <footer class="site-footer">
+          Rajasthan Royals-inspired colors · Not affiliated with or endorsed by Rajasthan Royals.
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
