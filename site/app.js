@@ -10,7 +10,7 @@ const pageNames = {
   overview: "OVERVIEW",
   batting: "BATTING",
   bowling: "BOWLING",
-  insights: "COACH INSIGHTS",
+  insights: "MORE INSIGHTS",
   players: "PLAYER EXPLORER",
   pressure: "PRESSURE MODEL",
   technical: "TECHNICAL RANKINGS",
@@ -507,9 +507,9 @@ function renderInsights() {
       </section>`;
   }).join("");
   pageRoot.innerHTML = `
-    ${heading("Coach Insights", "Quick, descriptive leaders drawn only from the saved Top 10 batter and bowler lists.")}
+    ${heading("More Insights", "Quick, descriptive leaders drawn only from the saved Top 10 batter and bowler lists.")}
     <div class="grid grid-3">${cards}</div>
-    <div class="callout blue" style="margin-top:18px"><strong>Coach's note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
+    <div class="callout blue" style="margin-top:18px"><strong>Reading note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
 }
 
 function renderPlayers() {
