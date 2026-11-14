@@ -394,7 +394,7 @@ function renderOverview() {
       ${barChart(gradient, "pressure_band", "win_rate", "blue", 2)}
       <p class="note">Bars show win-rate proportions; see Pressure Model for confidence intervals and diagnostics.</p>
     </section>
-    <div class="callout" style="margin-top:18px"><strong>Interpretation:</strong> The dashboard presents exploratory results only. Scoring mappings are assumptions, not source-confirmed definitions.</div>`;
+  `;
 }
 
 function renderFeatured(row, role) {
