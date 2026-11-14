@@ -1085,6 +1085,13 @@ h3 {
     padding-right: 28px;
   }
 
+  .hero .exploratory-pill {
+    display: inline-block;
+    margin-bottom: 17px;
+    position: static;
+    width: fit-content;
+  }
+
   .topbar {
     padding: 0 28px;
   }
@@ -1150,12 +1157,6 @@ h3 {
 
   .hero {
     padding: 25px 22px;
-  }
-
-  .hero .exploratory-pill {
-    margin-bottom: 17px;
-    position: static;
-    width: fit-content;
   }
 
   .hero h1 {
