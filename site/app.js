@@ -275,7 +275,6 @@ function renderRankingPage(role, technical = false) {
     ${heading(title, technical
       ? "Full saved metrics and ranking fields. No ranking is recalculated in this site."
       : "Search and filter the saved leaderboard by comparison group. These are assumption-based, exploratory rankings.")}
-    <div class="callout">${escapeHtml("Source scoring definitions remain unresolved. Treat these saved results as exploratory, not as verified rankings.")}</div>
     ${technical ? "" : `
       <div class="grid grid-2" style="margin-top:16px">
         <section class="card chart-card">
