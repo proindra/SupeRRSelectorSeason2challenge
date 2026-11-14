@@ -64,7 +64,6 @@ src/suprr/
   metrics/                     Batter, bowler, and competition metrics
   ranking/                     Eligibility, shrinkage, and composite ranks
   robustness/                  Optional sensitivity, bootstrap, and scenarios
-  dashboard/app.py             Streamlit pages and saved-result loading
 scripts/
   run_pipeline.py              Run the exploratory analysis pipeline
   validate_rankings.py         Separate optional exploratory ranking assessment
@@ -95,24 +94,24 @@ Completed assumption-based runs are preserved separately in
 is `artifacts\exploratory\0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4\`. Existing run folders are retained
 for their provenance; do not delete them as temporary files.
 
-## Installation and dashboard launch
+## Installation and local dashboard preview
 
 Run these commands in Windows PowerShell from the project directory:
 
 ```powershell
 uv python install 3.12
 uv sync --all-groups
-uv run streamlit run src\suprr\dashboard\app.py
+uv run python -m http.server 8000 --directory site
 ```
 
-Open the local URL printed by Streamlit, normally `http://localhost:8501`. For an ordinary
-presentation, install dependencies and launch the dashboard; **do not run the analysis pipeline
-unless the input data or configuration has changed**.
+Open `http://localhost:8000` to preview the static dashboard. For an ordinary presentation, start
+the static site; **do not run the analysis pipeline unless the input data or configuration has
+changed**.
 
 ## GitHub Pages dashboard
 
-The GitHub Pages version is a static site; it does not run Streamlit or Python on the host. It
-uses the saved snapshot in `site\data\dashboard.json` and includes aggregate rankings, pressure
+The GitHub Pages dashboard is a static site and does not run Python on the host. It uses the saved
+snapshot in `site\data\dashboard.json` and includes aggregate rankings, pressure
 diagnostics, audit evidence, and match/phase player summaries. Raw source CSVs and delivery-level
 rows are not published.
 
