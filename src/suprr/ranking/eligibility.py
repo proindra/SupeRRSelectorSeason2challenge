@@ -3,6 +3,19 @@ from __future__ import annotations
 import pandas as pd
 
 
+def exclude_players(
+    frame: pd.DataFrame,
+    *,
+    player_column: str,
+    excluded_player_ids: set[str],
+) -> pd.DataFrame:
+    if not excluded_player_ids:
+        return frame.copy()
+    return frame.loc[
+        ~frame[player_column].astype("string").isin(excluded_player_ids)
+    ].copy()
+
+
 def apply_combined_eligibility(
     frame: pd.DataFrame,
     *,

@@ -60,7 +60,9 @@ def _rankings(run_dir: Path) -> dict[str, Any]:
     return output
 
 
-def _profile_rows(states: pd.DataFrame, role: str) -> dict[str, dict[str, Any]]:
+def _profile_rows(
+    states: pd.DataFrame, role: str, excluded_player_ids: set[str]
+) -> dict[str, dict[str, Any]]:
     is_batter = role == "batter"
     player_column = "striker_id" if is_batter else "bowler_id"
     high_pressure = states["is_high_pressure"].fillna(False).astype(bool)
@@ -86,7 +88,9 @@ def _profile_rows(states: pd.DataFrame, role: str) -> dict[str, dict[str, Any]]:
         rate_name = "pressure_economy"
         rate_factor = 6.0
 
-    detail = states.loc[states[player_column].notna(), ["match_id", "phase"]].copy()
+    player_ids = states[player_column].astype("string")
+    included = states[player_column].notna() & ~player_ids.isin(excluded_player_ids)
+    detail = states.loc[included, ["match_id", "phase"]].copy()
     detail["player_id"] = states.loc[detail.index, player_column].astype(str)
     detail["pressure_runs"] = pressure_runs.loc[detail.index].astype(float)
     detail["pressure_balls"] = pressure_balls.loc[detail.index].astype(int)
@@ -214,6 +218,7 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     config = yaml.safe_load(
         (PROJECT_ROOT / "config" / "default.yaml").read_text(encoding="utf-8")
     )
+    excluded_player_ids = set(manifest.get("ranking_exclusions", {}).get("player_ids", []))
     return {
         "manifest": {
             "run_id": manifest.get("run_id", run_dir.name),
@@ -222,6 +227,12 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
             "output_label": manifest.get("output_label"),
             "completed_at": manifest.get("completed_at"),
             "config_version": manifest.get("config_version"),
+            "ranking_exclusions": {
+                "basis": manifest.get("ranking_exclusions", {}).get("basis"),
+                "player_count": len(
+                    manifest.get("ranking_exclusions", {}).get("player_ids", [])
+                ),
+            },
             "pressure_validation": {
                 "status": pressure.get("status"),
                 "passed": pressure.get("passed"),
@@ -242,8 +253,8 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         "pressure_distributions": _pressure_distributions(states),
         "rankings": _rankings(run_dir),
         "profiles": {
-            "batter": _profile_rows(states, "batter"),
-            "bowler": _profile_rows(states, "bowler"),
+            "batter": _profile_rows(states, "batter", excluded_player_ids),
+            "bowler": _profile_rows(states, "bowler", excluded_player_ids),
         },
         "quality": _safe_quality(report_dir),
         "robustness": _optional_tables(run_dir),

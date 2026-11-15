@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from suprr.ranking.eligibility import apply_combined_eligibility
+from suprr.ranking.eligibility import apply_combined_eligibility, exclude_players
 from suprr.ranking.scoring import competition_weighted_score
 from suprr.ranking.shrinkage import shrink_rate
 
@@ -27,6 +27,25 @@ def test_eligibility_combines_samples_across_comparison_groups():
         minimum_count=8,
     )
     assert result["eligible"].all()
+
+
+def test_exclude_players_removes_only_listed_player_ids():
+    frame = pd.DataFrame(
+        [
+            {"player": "eligible", "group": "IPL"},
+            {"player": "excluded", "group": "T20I"},
+        ]
+    )
+
+    result = exclude_players(
+        frame,
+        player_column="player",
+        excluded_player_ids={"excluded"},
+    )
+
+    assert result[["player", "group"]].to_dict("records") == [
+        {"player": "eligible", "group": "IPL"}
+    ]
 
 
 def test_score_orients_metrics_and_preserves_missing_values():

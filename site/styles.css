@@ -264,11 +264,27 @@ button {
 }
 
 .site-footer {
+  align-items: center;
   border-top: 1px solid var(--line);
   color: #8c97aa;
+  display: flex;
   font-size: 10px;
+  gap: 12px;
+  justify-content: space-between;
   margin: 0 42px;
   padding: 16px 0 22px;
+}
+
+.report-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.report-links a {
+  color: var(--blue);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .page-heading {

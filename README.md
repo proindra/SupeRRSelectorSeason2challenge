@@ -125,17 +125,21 @@ The GitHub Pages dashboard is a static site and does not run Python on the host.
 snapshot in `site\data\dashboard.json` and includes aggregate rankings, pressure
 diagnostics, audit evidence, and match/phase player summaries. Raw source CSVs and delivery-level
 rows are not published.
+The dashboard also links to the updated RR pressure brief and the latest results PDF under
+`site\reports\`.
 
 To refresh the static snapshot after producing a completed local exploratory run:
 
 ```powershell
 uv run python scripts\build_static_dashboard.py
 uv run python scripts\validate_static_dashboard.py
+uv run python scripts\build_pressure_brief.py --run-id <run-id>
 ```
 
-The export reads saved run artifacts only; it does not run the analysis pipeline, bootstrap,
-sensitivity, or scenario validation. Commit the updated `site\data\dashboard.json` to publish the
-new snapshot. To preview it locally:
+The dashboard and PDF exporters read saved run artifacts only; they do not run the analysis
+pipeline, bootstrap, sensitivity, or scenario validation. The PDF command refreshes both
+`artifacts\briefs\rr_ipl_2027_pressure_brief.pdf` and the downloadable PDFs in `site\reports\`.
+Commit the updated `site\` files to publish the new snapshot and reports. To preview locally:
 
 ```powershell
 uv run python -m http.server 8000 --directory site
@@ -206,6 +210,10 @@ Player ranking uses competition-group comparisons, sample eligibility, exposure-
 (`k = 100`), and weighted metric z-scores. Each pressure innings/spell needs at least 6 pressure
 balls. A batter needs at least 60 pressure balls across 8 pressure innings; a bowler needs at least
 60 legal pressure balls across 8 pressure spells.
+
+Players mapped to Pakistan or Pakistan A squads are excluded from ranking candidates and dashboard
+player profiles because they are ineligible for the IPL. The source has no nationality field, so
+squad membership is used as the available proxy; raw source and match records are retained.
 
 The batter score weights are: pressure strike rate `+0.25`, pressure runs `+0.15`, strike-rate
 change `+0.15`, boundary rate `+0.10`, consistency `+0.10`, scoreless-ball rate `-0.10`, and

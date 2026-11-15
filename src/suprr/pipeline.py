@@ -25,6 +25,7 @@ from suprr.ingestion.mapping import canonicalize_sources, normalize_source_mappi
 from suprr.metrics.batter import calculate_batter_metrics
 from suprr.metrics.bowler import calculate_bowler_metrics
 from suprr.metrics.competition import add_comparison_group
+from suprr.ranking.eligibility import exclude_players
 from suprr.ranking.rankings import rank_batters, rank_bowlers
 from suprr.robustness.bootstrap import match_level_bootstrap, summarize_bootstrap
 from suprr.robustness.scenarios import run_scenario_grid, stability_adjusted_top10
@@ -180,6 +181,7 @@ def _write_run_manifest(
     completed_at: str,
     full_robustness_requested: bool = False,
     pressure_validation: dict[str, Any] | None = None,
+    ranking_exclusions: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "run_id": run_id,
@@ -197,6 +199,7 @@ def _write_run_manifest(
         "data_fingerprint": data_fingerprint,
         "data_manifest": data_manifest,
         "pressure_validation": pressure_validation,
+        "ranking_exclusions": ranking_exclusions or {},
     }
     write_json(report_dir / "run_manifest.json", payload)
     return payload
@@ -209,6 +212,7 @@ def _rank_role_for_states(
     role: str,
     *,
     k: int | None = None,
+    excluded_player_ids: set[str] | None = None,
 ) -> pd.DataFrame:
     states = states.loc[
         states["winner_team_id"].notna() & states["comparison_group"].isin({"IPL", "T20I"})
@@ -217,12 +221,22 @@ def _rank_role_for_states(
         metrics = calculate_batter_metrics(states, config)
         metrics = add_comparison_group(metrics, competition_table, config)
         metrics = metrics.loc[metrics["comparison_group"].isin({"IPL", "T20I"})]
+        metrics = exclude_players(
+            metrics,
+            player_column="striker_id",
+            excluded_player_ids=excluded_player_ids or set(),
+        )
         _, scores = rank_batters(metrics, states, config, k=k)
         player_column = "striker_id"
     elif role == "bowler":
         metrics = calculate_bowler_metrics(states, config)
         metrics = add_comparison_group(metrics, competition_table, config)
         metrics = metrics.loc[metrics["comparison_group"].isin({"IPL", "T20I"})]
+        metrics = exclude_players(
+            metrics,
+            player_column="bowler_id",
+            excluded_player_ids=excluded_player_ids or set(),
+        )
         _, scores = rank_bowlers(metrics, states, config, k=k)
         player_column = "bowler_id"
     else:
@@ -261,6 +275,7 @@ def _scoring_mapping_sensitivity(
     over_base: int,
     verified_super_over_keys: set[tuple[str, int]],
     baseline_scores: dict[str, pd.DataFrame],
+    excluded_player_ids: set[str],
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, Any]]]:
     detail_rows: list[pd.DataFrame] = []
     summary_rows: list[dict[str, Any]] = []
@@ -322,7 +337,11 @@ def _scoring_mapping_sensitivity(
                 continue
 
             alternative = _rank_role_for_states(
-                scenario_states, scenario.config, competition_table, role
+                scenario_states,
+                scenario.config,
+                competition_table,
+                role,
+                excluded_player_ids=excluded_player_ids,
             )
             alternative_top = set(
                 alternative.loc[alternative["rank"].le(10), player_column].dropna()
@@ -520,6 +539,17 @@ def run_pipeline(
     canonical = canonicalize_sources(sources, config)
     matches = canonical["matches"]
     deliveries = canonical["deliveries"]
+    player_mapping = canonical["player_team_mapping"]
+    pakistan_team = player_mapping["team_name"].astype("string").str.strip().str.casefold()
+    excluded_player_ids = set(
+        player_mapping.loc[
+            pakistan_team.isin({"pakistan", "pakistan a"}), "player_id"
+        ].dropna().astype(str)
+    )
+    ranking_exclusions = {
+        "basis": "player mappings to Pakistan or Pakistan A squads",
+        "player_ids": sorted(excluded_player_ids),
+    }
     over_base = int(audit.checks["over_number_convention"]["inferred_base"])
     verified_super_over_keys = {
         (str(item["match_id"]), int(item["innings"]))
@@ -577,6 +607,7 @@ def run_pipeline(
             completed_at=datetime.now(UTC).isoformat(),
             full_robustness_requested=full_robustness,
             pressure_validation=validation_dict,
+            ranking_exclusions=ranking_exclusions,
         )
         return {
             "status": pressure_validation.status,
@@ -595,6 +626,16 @@ def run_pipeline(
     bowler_metrics = add_comparison_group(bowler_metrics, competition_table, config)
     batter_metrics = batter_metrics.loc[batter_metrics["comparison_group"].isin({"IPL", "T20I"})]
     bowler_metrics = bowler_metrics.loc[bowler_metrics["comparison_group"].isin({"IPL", "T20I"})]
+    batter_metrics = exclude_players(
+        batter_metrics,
+        player_column="striker_id",
+        excluded_player_ids=excluded_player_ids,
+    )
+    bowler_metrics = exclude_players(
+        bowler_metrics,
+        player_column="bowler_id",
+        excluded_player_ids=excluded_player_ids,
+    )
     batter_states = valid_states.loc[valid_states["comparison_group"].isin({"IPL", "T20I"})]
     batter_grouped, batter_scores = rank_batters(batter_metrics, batter_states, config)
     bowler_grouped, bowler_scores = rank_bowlers(bowler_metrics, batter_states, config)
@@ -682,6 +723,7 @@ def run_pipeline(
                 over_base=over_base,
                 verified_super_over_keys=verified_super_over_keys,
                 baseline_scores={"batter": batter_scores, "bowler": bowler_scores},
+                excluded_player_ids=excluded_player_ids,
             )
         )
         write_csv(rankings_dir / "scoring_mapping_sensitivity.csv", mapping_sensitivity)
@@ -711,6 +753,7 @@ def run_pipeline(
                     config,
                     competition_table,
                     player_role,
+                    excluded_player_ids=excluded_player_ids,
                 )
 
             return evaluate
@@ -742,6 +785,7 @@ def run_pipeline(
                     competition_table,
                     role,
                     k=int(scenario.get("shrinkage_k", active_config.reliability.default_k_balls)),
+                    excluded_player_ids=excluded_player_ids,
                 )
 
             return evaluate
@@ -908,6 +952,11 @@ def run_pipeline(
             },
             pressure_validation=validation_dict,
             sensitivity_summary=sensitivity_summary,
+            ranking_exclusion_note=(
+                f"{len(excluded_player_ids)} player IDs mapped to Pakistan or Pakistan A squads "
+                "were excluded from ranking candidates. The source has no nationality field; "
+                "squad membership is used as the available proxy."
+            ),
         )
     write_methodology_report(
         report_dir / "methodology_and_results.md",
@@ -932,6 +981,7 @@ def run_pipeline(
         completed_at=datetime.now(UTC).isoformat(),
         full_robustness_requested=full_robustness,
         pressure_validation=validation_dict,
+        ranking_exclusions=ranking_exclusions,
     )
     return {
         "status": status,

@@ -166,6 +166,7 @@ def write_results_pdf(
     run_metadata: dict[str, Any],
     pressure_validation: dict[str, Any],
     sensitivity_summary: dict[str, Any] | None = None,
+    ranking_exclusion_note: str | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     document = SimpleDocTemplate(
@@ -202,6 +203,11 @@ def write_results_pdf(
             "EXPLORATORY only: scoring assumptions are not confirmed by an authoritative "
             "source codebook.",
             styles["BodyText"],
+        ),
+        *(
+            [Paragraph(ranking_exclusion_note, styles["BodyText"])]
+            if ranking_exclusion_note
+            else []
         ),
         Spacer(1, 0.2 * inch),
         Paragraph("Method and sample rules", styles["Heading2"]),
