@@ -8,6 +8,9 @@ for GitHub Pages.
 > **Result scope:** This project produces and displays **EXPLORATORY** results only. Scoring
 > mappings are recorded assumptions, not source-confirmed definitions; audit findings are retained
 > as diagnostics and do not determine whether exploratory analysis can run.
+>
+> The dashboard intentionally omits an **EXPLORATORY ONLY** status label for a cleaner presentation.
+> This does not change the status or limitations of the saved results.
 
 The visual theme uses colors inspired by Rajasthan Royals and does not imply official affiliation.
 
@@ -154,7 +157,7 @@ analysis dependencies or rerun the exploratory pipeline.
   player profiles.
 - **Bowling Under Pressure:** saved bowler rankings, economy/wicket/dot-ball comparisons, charts,
   and player profiles.
-- **Coach Insights:** dataset-specific metric leaders drawn only from the saved Top 10 batter and
+- **More Insights:** overview highlights and dataset-specific metric leaders drawn from the saved Top 10 batter and
   bowler leaderboards.
 - **Player Explorer:** saved player profiles and available match/phase views.
 - **Pressure Model:** saved pressure diagnostics and chase outcome summaries.

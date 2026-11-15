@@ -90,7 +90,7 @@ function dateLabel(value) {
     : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function heading(title, description, eyebrow = "SAVED EXPLORATORY RESULTS") {
+function heading(title, description, eyebrow = "SAVED RESULTS") {
   return `
     <div class="page-heading">
       <div>
@@ -98,7 +98,6 @@ function heading(title, description, eyebrow = "SAVED EXPLORATORY RESULTS") {
         <h1>${escapeHtml(title)}</h1>
         <p class="page-description">${escapeHtml(description)}</p>
       </div>
-      <span class="exploratory-pill">EXPLORATORY ONLY</span>
     </div>`;
 }
 
@@ -267,7 +266,10 @@ function filterRows(rows, search, competition) {
 }
 
 function rankingColumns(role, technical) {
-  if (technical) return autoColumns(dashboardData.rankings[role].full[0] ? [dashboardData.rankings[role].full[0]] : [], 40);
+  if (technical) {
+    return autoColumns(dashboardData.rankings[role].full[0] ? [dashboardData.rankings[role].full[0]] : [], 40)
+      .filter((column) => column.key !== "output_label" && column.key !== "analysis_mode");
+  }
   const common = [
     { key: "rank", label: "Rank" },
     { key: "player_name", label: "Player" },
@@ -317,7 +319,7 @@ function renderRankingPage(role, technical = false) {
   pageRoot.innerHTML = `
     ${heading(title, technical
       ? "Full saved metrics and ranking fields. No ranking is recalculated in this site."
-      : "Search and filter the saved leaderboard by comparison group. Rankings are exploratory; conditional RR angles are role-fit prompts for the saved Top 10, not auction recommendations. Player availability is not modeled.")}
+      : "Search and filter the saved leaderboard by comparison group. Rankings use configured assumptions; conditional RR angles are role-fit prompts for the saved Top 10, not auction recommendations. Player availability is not modeled.")}
     ${technical ? "" : `
       <div class="grid grid-2" style="margin-top:16px">
         <section class="card chart-card">
@@ -387,10 +389,9 @@ function renderOverview() {
 
   pageRoot.innerHTML = `
     <section class="hero">
-      <span class="exploratory-pill">EXPLORATORY ANALYSIS</span>
       <div class="eyebrow">SUPERR SELECTOR · RAJASTHAN ROYALS SCOUTING</div>
       <h1>RR 2027 Auction Pressure Profiles</h1>
-      <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings are exploratory; player availability is not modeled.</p>
+      <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings use configured assumptions; player availability is not modeled.</p>
       <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
     </section>
     ${renderOverviewSignals(overview)}
@@ -455,7 +456,7 @@ function renderOverviewSignals(overview) {
     </div>
     ${sectionTitle("Pressure outcome gradient", "Observed chasing-team win rate by saved pressure band")}
     <section class="card chart-card">
-      <div class="chart-heading"><div><h3>Win rate by pressure band</h3><p>These are observational summaries and depend on exploratory assumptions.</p></div></div>
+      <div class="chart-heading"><div><h3>Win rate by pressure band</h3><p>These are observational summaries and depend on the configured scoring assumptions.</p></div></div>
       ${barChart(gradient, "pressure_band", "win_rate", "blue", 2)}
       <p class="note">Bars show win-rate proportions; see Pressure Model for confidence intervals and diagnostics.</p>
     </section>
@@ -617,7 +618,7 @@ function renderInsights() {
       </section>`;
   }).join("");
   pageRoot.innerHTML = `
-    ${heading("More Insights", "Pressure-performance leaders and repeatability signals from the saved exploratory rankings.")}
+    ${heading("More Insights", "Pressure-performance leaders and repeatability signals from the saved rankings.")}
     ${sectionTitle("Overview highlights", "The key signals, shown as concise insight cards")}
     <div class="grid grid-3">${renderOverviewInsightCards(overview)}</div>
     ${sectionTitle("Top 10 metric leaders", "Descriptive leaders within the saved batter and bowler Top 10 lists")}
@@ -728,7 +729,6 @@ function renderPlayers() {
       <hr class="section-divider">
       <div class="page-heading">
         <div><div class="eyebrow">${batter ? "BATTER" : "BOWLER"} PROFILE</div><h2>${escapeHtml(player.name)}</h2><p class="muted">Player ID ${escapeHtml(player.id)} · Comparison group ${escapeHtml(player.row.comparison_context || "context unavailable")}</p></div>
-        <span class="exploratory-pill">EXPLORATORY METRICS</span>
       </div>
       <div class="grid grid-4">${metrics.map(([label, value], index) => kpi(label, value, "", !batter && index % 2 === 1)).join("")}</div>
       <div class="grid grid-2" style="margin-top:16px">
@@ -767,7 +767,7 @@ function renderPressure() {
     .map(([pair, value]) => ({ pair: pair.replace("_", " / "), correlation: value }));
   pageRoot.innerHTML = `
     ${heading("Pressure Model", "Saved diagnostics for the pre-delivery pressure score. This page does not run validation or recalculate rankings.")}
-    <div class="callout"><strong>Exploratory:</strong> the score is evaluated under configured assumptions that are not confirmed by an authoritative source.</div>
+    <div class="callout"><strong>Scoring caveat:</strong> the score is evaluated under configured assumptions that are not confirmed by an authoritative source.</div>
     ${sectionTitle("Model definition")}
     <section class="card">
       <div class="formula">P = ${number(weights.required_rate, 2)}R + ${number(weights.wickets_lost, 2)}W + ${number(weights.chase_difficulty, 2)}D + ${number(weights.innings_stage, 2)}S</div>
@@ -838,10 +838,11 @@ function renderRobustness() {
   const sections = tables.map(([name, rows]) => `
     <section class="card" style="margin-top:14px">
       <div class="chart-heading"><div><h3>${escapeHtml(labels[name] || name)}</h3><p>Existing saved output; this page does not run robustness analysis.</p></div><button class="button secondary" data-download="${escapeHtml(name)}">Download CSV</button></div>
-      ${table(rows.slice(0, 250), autoColumns(rows, 12))}
+      ${table(rows.slice(0, 250), autoColumns(rows, 12)
+        .filter((column) => column.key !== "output_label" && column.key !== "analysis_mode"))}
     </section>`).join("");
   pageRoot.innerHTML = `
-    ${heading("Robustness", "Previously saved exploratory sensitivity and stability outputs. No bootstrap, sensitivity, or scenario analysis is run by this site.")}
+    ${heading("Robustness", "Previously saved sensitivity and stability outputs. No bootstrap, sensitivity, or scenario analysis is run by this site.")}
     <div class="callout blue"><strong>Scope:</strong> these diagnostics describe the assumption-based rankings; they do not establish source-validated results.</div>
     ${tables.length ? sections : `<div class="empty-state" style="margin-top:16px">No optional robustness output was saved for this run.</div>`}`;
 }
@@ -866,7 +867,7 @@ function renderQuality() {
   const revised = exclusions.revised_conditions || {};
   pageRoot.innerHTML = `
     ${heading("Data Quality & Methodology", "Source evidence, limitations, and exclusions retained with the saved run.")}
-    <div class="callout"><strong>EXPLORATORY ONLY:</strong> audit findings are diagnostics and do not gate the saved rankings. Scoring assumptions remain unconfirmed.</div>
+    <div class="callout"><strong>Audit scope:</strong> findings are diagnostics and do not gate the saved rankings. Scoring assumptions remain unconfirmed.</div>
     ${sectionTitle("Saved source inventory")}
     ${tableCard("Audited input tables", tables, [
       { key: "table", label: "Table" },
@@ -906,7 +907,7 @@ function renderQuality() {
     <div>${schemaGroups}</div>
     ${sectionTitle("Assumptions")}
     <section class="card">
-      <p class="muted">Configured choices used in the saved exploratory run. These are not treated as source-confirmed definitions.</p>
+      <p class="muted">Configured choices used in the saved run. These are not treated as source-confirmed definitions.</p>
       <div class="metric-list">${(quality.assumptions || []).map((item) => `
         <div class="metric-item"><span>${escapeHtml(item.name || item.gate_id || "Assumption")}</span><strong>${escapeHtml(item.value ?? item.status ?? "Configured")}</strong></div>`).join("") || `<p class="muted">Detailed assumption rows are not available.</p>`}</div>
       <hr class="section-divider">
