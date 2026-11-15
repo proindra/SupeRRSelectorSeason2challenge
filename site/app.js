@@ -462,6 +462,86 @@ function renderOverviewSignals(overview) {
   `;
 }
 
+function renderOverviewInsightCards(overview) {
+  const { batterTop, bowlerTop, fastest, tightest, iplBatterRepeat, iplBowlerRepeat } = overview;
+  const repeatExposure = (role, row) => role === "batter"
+    ? `${integer(row.pressure_runs)} runs · ${integer(row.pressure_balls)} balls`
+    : `${integer(row.pressure_wickets)} wickets · ${integer(row.legal_pressure_balls)} legal balls`;
+  const cards = [
+    {
+      role: "Batter",
+      label: "Overall pressure leader",
+      row: batterTop,
+      value: batterTop ? integer(batterTop.pressure_runs) : "—",
+      detail: batterTop
+        ? `Saved rank ${integer(batterTop.rank)} · ${batterTop.comparison_context || "scope unavailable"}`
+        : "No saved leader is available.",
+      suffix: "pressure runs"
+    },
+    {
+      role: "Bowler",
+      label: "Overall pressure leader",
+      row: bowlerTop,
+      value: bowlerTop ? integer(bowlerTop.pressure_wickets) : "—",
+      detail: bowlerTop
+        ? `Saved rank ${integer(bowlerTop.rank)} · ${bowlerTop.comparison_context || "scope unavailable"}`
+        : "No saved leader is available.",
+      suffix: "pressure wickets"
+    },
+    {
+      role: "Batter",
+      label: "IPL-only repeat signal",
+      row: iplBatterRepeat?.row,
+      value: iplBatterRepeat ? percentage(iplBatterRepeat.frequency) : "—",
+      detail: iplBatterRepeat
+        ? `Saved rank ${integer(iplBatterRepeat.row.rank)} · ${repeatExposure("batter", iplBatterRepeat.row)}`
+        : "No IPL-only repeat signal is available.",
+      suffix: "bootstrap Top-10"
+    },
+    {
+      role: "Bowler",
+      label: "IPL-only repeat signal",
+      row: iplBowlerRepeat?.row,
+      value: iplBowlerRepeat ? percentage(iplBowlerRepeat.frequency) : "—",
+      detail: iplBowlerRepeat
+        ? `Saved rank ${integer(iplBowlerRepeat.row.rank)} · ${repeatExposure("bowler", iplBowlerRepeat.row)}`
+        : "No IPL-only repeat signal is available.",
+      suffix: "bootstrap Top-10"
+    },
+    {
+      role: "Batter",
+      label: "Fastest pressure scoring",
+      row: fastest,
+      value: fastest ? number(fastest.pressure_strike_rate, 2) : "—",
+      detail: fastest
+        ? `${integer(fastest.pressure_balls)} pressure balls · ${fastest.comparison_context || "scope unavailable"}`
+        : "No saved batter rate is available.",
+      suffix: "runs / 100 balls"
+    },
+    {
+      role: "Bowler",
+      label: "Tightest pressure economy",
+      row: tightest,
+      value: tightest ? number(tightest.pressure_economy, 2) : "—",
+      detail: tightest
+        ? `${integer(tightest.legal_pressure_balls)} legal balls · ${tightest.comparison_context || "scope unavailable"}`
+        : "No saved bowler rate is available.",
+      suffix: "runs / over"
+    }
+  ];
+
+  return cards.map((card) => `
+    <section class="card">
+      <div class="eyebrow">${escapeHtml(card.role.toUpperCase())} LEADER</div>
+      <h3>${escapeHtml(card.label)}</h3>
+      <p class="inline-stat">${escapeHtml(card.value)}<span class="muted"> ${escapeHtml(card.suffix)}</span></p>
+      ${card.row
+        ? `<p><strong>${escapeHtml(card.row.player_name)}</strong></p>`
+        : ""}
+      <p class="muted">${escapeHtml(card.detail)}</p>
+    </section>`).join("");
+}
+
 function getIplRepeatProfile(role) {
   const idKey = role === "batter" ? "striker_id" : "bowler_id";
   const summaryRows = dashboardData.robustness[`${role}_bootstrap_summary`] || [];
@@ -537,8 +617,9 @@ function renderInsights() {
       </section>`;
   }).join("");
   pageRoot.innerHTML = `
-    ${heading("More Insights", "Overview scouting signals plus additional leaders from the saved Top 10 lists.")}
-    ${renderOverviewSignals(overview)}
+    ${heading("More Insights", "Pressure-performance leaders and repeatability signals from the saved exploratory rankings.")}
+    ${sectionTitle("Overview highlights", "The key signals, shown as concise insight cards")}
+    <div class="grid grid-3">${renderOverviewInsightCards(overview)}</div>
     ${sectionTitle("Top 10 metric leaders", "Descriptive leaders within the saved batter and bowler Top 10 lists")}
     <div class="grid grid-3">${cards}</div>
     <div class="callout blue" style="margin-top:18px"><strong>Reading note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
