@@ -610,9 +610,7 @@ function renderInsights() {
   }).join("");
   pageRoot.innerHTML = `
     ${heading("More Insights", "Pressure-performance leaders and repeatability signals from the saved rankings.")}
-    ${sectionTitle("Overview highlights", "The key signals, shown as concise insight cards")}
     <div class="grid grid-3">${renderOverviewInsightCards(overview)}</div>
-    ${sectionTitle("Top 10 metric leaders", "Descriptive leaders within the saved batter and bowler Top 10 lists")}
     <div class="grid grid-3">${cards}</div>
     <div class="callout blue" style="margin-top:18px"><strong>Reading note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
 }
