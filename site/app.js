@@ -980,7 +980,7 @@ async function start() {
     if (!response.ok) throw new Error(`Could not load dashboard data (${response.status}).`);
     dashboardData = await response.json();
     document.getElementById("sidebar-run").textContent =
-      `Run ${dashboardData.manifest.run_id} · ${dateLabel(dashboardData.manifest.completed_at)}`;
+      `Filtered snapshot ${dashboardData.manifest.run_id} · ${dateLabel(dashboardData.manifest.completed_at)}`;
     renderPage(currentPage);
   } catch (error) {
     pageRoot.innerHTML = `
