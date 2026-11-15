@@ -983,7 +983,6 @@ def build_brief(run_id: str) -> Path:
                 "membership is used as the available proxy."
             ),
         )
-        shutil.copy2(results_pdf, SITE_REPORTS / "final_results.pdf")
     return BRIEF_PATH
 
 
@@ -998,7 +997,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     output = build_brief(args.run_id)
-    print(f"Built {output.relative_to(PROJECT_ROOT)} and copied both PDFs to site/reports.")
+    print(f"Built {output.relative_to(PROJECT_ROOT)} and copied the brief to site/reports.")
 
 
 if __name__ == "__main__":

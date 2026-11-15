@@ -137,8 +137,7 @@ The GitHub Pages dashboard is a static site and does not run Python on the host.
 snapshot in `site\data\dashboard.json` and includes aggregate rankings, pressure
 diagnostics, audit evidence, and match/phase player summaries. Raw source CSVs and delivery-level
 rows are not published.
-The dashboard also links to the updated RR pressure brief and the latest results PDF under
-`site\reports\`.
+The dashboard links to the updated RR pressure brief under `site\reports\`.
 
 To refresh the static snapshot after producing a completed local exploratory run:
 
@@ -153,8 +152,8 @@ matching `site\data\dashboard.json` snapshot when the run folder has been remove
 requires the original raw CSVs. Neither command reruns the ranking analysis, bootstrap,
 sensitivity, or scenario validation. The PDF command refreshes
 `artifacts\briefs\rr_ipl_2027_pressure_brief.pdf` and the downloadable brief in `site\reports\`.
-When run artifacts are available it also refreshes `site\reports\final_results.pdf`; the
-dashboard-snapshot fallback leaves that PDF unchanged.
+When run artifacts are available, the builder also creates a run-local `final_results.pdf`;
+it is not published to the dashboard.
 When rebuilding `site\data\dashboard.json`, ensure the intended filtered ranking run is available;
 the retained `0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4` run is not a substitute for that ranking
 snapshot. Commit the updated `site\` files to publish changes. To preview locally:
