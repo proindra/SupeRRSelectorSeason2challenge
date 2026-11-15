@@ -411,7 +411,6 @@ function getOverviewInsights() {
     .sort((a, b) => Number(a.pressure_economy) - Number(b.pressure_economy))[0];
   const iplBatterRepeat = getIplRepeatProfile("batter");
   const iplBowlerRepeat = getIplRepeatProfile("bowler");
-  const gradient = dashboardData.pressure_validation.outcome_gradient;
 
   return {
     batterTop,
@@ -419,8 +418,7 @@ function getOverviewInsights() {
     fastest,
     tightest,
     iplBatterRepeat,
-    iplBowlerRepeat,
-    gradient
+    iplBowlerRepeat
   };
 }
 
@@ -431,8 +429,7 @@ function renderOverviewSignals(overview) {
     fastest,
     tightest,
     iplBatterRepeat,
-    iplBowlerRepeat,
-    gradient
+    iplBowlerRepeat
   } = overview;
   return `
     ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
@@ -454,12 +451,6 @@ function renderOverviewSignals(overview) {
         ${tightest ? `<h2>${escapeHtml(tightest.player_name)}</h2><p class="inline-stat" style="color:var(--blue)">${escapeHtml(number(tightest.pressure_economy, 2))}<span class="muted"> runs / over</span></p><p class="muted">Across ${integer(tightest.legal_pressure_balls)} legal pressure balls · ${escapeHtml(tightest.comparison_context || "comparison group unavailable")}</p>` : `<p class="muted">No saved bowler rate is available.</p>`}
       </section>
     </div>
-    ${sectionTitle("Pressure outcome gradient", "Observed chasing-team win rate by saved pressure band")}
-    <section class="card chart-card">
-      <div class="chart-heading"><div><h3>Win rate by pressure band</h3><p>These are observational summaries and depend on the configured scoring assumptions.</p></div></div>
-      ${barChart(gradient, "pressure_band", "win_rate", "blue", 2)}
-      <p class="note">Bars show win-rate proportions; see Pressure Model for confidence intervals and diagnostics.</p>
-    </section>
   `;
 }
 
