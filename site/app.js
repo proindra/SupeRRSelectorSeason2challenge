@@ -90,6 +90,18 @@ function dateLabel(value) {
     : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function flattenAssumptions(value, prefix = "") {
+  if (Array.isArray(value)) {
+    return [{ name: prefix, value: value.join(", ") || "None" }];
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, nestedValue]) =>
+      flattenAssumptions(nestedValue, prefix ? `${prefix}.${key}` : key)
+    );
+  }
+  return prefix ? [{ name: prefix, value }] : [];
+}
+
 function heading(title, description, eyebrow = "SAVED RESULTS") {
   return `
     <div class="page-heading">
@@ -848,6 +860,12 @@ function renderQuality() {
   const quality = dashboardData.quality;
   const evidence = quality.source_evidence || [];
   const findings = quality.findings || [];
+  const assumptions = Array.isArray(quality.assumptions)
+    ? quality.assumptions.map((item) => ({
+      name: item.name || item.gate_id || "Assumption",
+      value: item.value ?? item.status ?? "Configured"
+    }))
+    : flattenAssumptions(quality.assumptions || {});
   const tables = Object.entries(quality.tables || {}).map(([name, details]) => ({ table: name, ...details }));
   const schemaGroups = Object.entries(quality.schemas || {}).map(([name, columns]) => `
     <details class="schema-group">
@@ -905,8 +923,10 @@ function renderQuality() {
     ${sectionTitle("Assumptions")}
     <section class="card">
       <p class="muted">Configured choices used in the saved run. These are not treated as source-confirmed definitions.</p>
-      <div class="metric-list">${(quality.assumptions || []).map((item) => `
-        <div class="metric-item"><span>${escapeHtml(item.name || item.gate_id || "Assumption")}</span><strong>${escapeHtml(item.value ?? item.status ?? "Configured")}</strong></div>`).join("") || `<p class="muted">Detailed assumption rows are not available.</p>`}</div>
+      ${table(assumptions, [
+        { key: "name", label: "Assumption" },
+        { key: "value", label: "Configured value" }
+      ])}
       <hr class="section-divider">
       <h3>Run provenance</h3>
       <div class="metric-list">
