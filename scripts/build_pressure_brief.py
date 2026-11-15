@@ -182,37 +182,73 @@ def _heading(title: str, description: str, styles: Any) -> list[object]:
 def build_brief(run_id: str) -> Path:
     run_dir = RUNS_ROOT / run_id
     manifest_path = run_dir / "reports" / "run_manifest.json"
-    if not manifest_path.is_file():
-        raise FileNotFoundError(f"Run manifest not found: {manifest_path}")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("status") != "EXPLORATORY_COMPLETE":
-        raise ValueError(f"Run {run_id} is not marked EXPLORATORY_COMPLETE.")
-
-    rankings_dir = run_dir / "rankings"
-    batter_top10 = pd.read_csv(rankings_dir / "top_10_batters.csv").head(10)
-    bowler_top10 = pd.read_csv(rankings_dir / "top_10_bowlers.csv").head(10)
-    pressure = json.loads(
-        (run_dir / "reports" / "pressure_validation.json").read_text(encoding="utf-8")
-    )
-    excluded_count = len(manifest.get("ranking_exclusions", {}).get("player_ids", []))
     dashboard = json.loads(
         (PROJECT_ROOT / "site" / "data" / "dashboard.json").read_text(encoding="utf-8")
     )
     if dashboard.get("manifest", {}).get("run_id") != run_id:
         raise ValueError("Build the dashboard snapshot for this run before building its brief.")
+
+    run_artifacts_available = manifest_path.is_file()
+    if run_artifacts_available:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        rankings_dir = run_dir / "rankings"
+        batter_top10 = pd.read_csv(rankings_dir / "top_10_batters.csv").head(10)
+        bowler_top10 = pd.read_csv(rankings_dir / "top_10_bowlers.csv").head(10)
+        pressure = json.loads(
+            (run_dir / "reports" / "pressure_validation.json").read_text(encoding="utf-8")
+        )
+        inventory = {row["table"]: row for row in manifest.get("data_manifest", [])}
+        states_path = run_dir / "processed" / "pressure_states.parquet"
+    else:
+        manifest = dashboard["manifest"]
+        batter_top10 = pd.DataFrame(dashboard["rankings"]["batter"]["top10"]).head(10)
+        bowler_top10 = pd.DataFrame(dashboard["rankings"]["bowler"]["top10"]).head(10)
+        pressure = dashboard.get("pressure_validation", {})
+        pressure["summary"] = {
+            "distinct_matches": dashboard.get("coverage", {}).get("distinct_matches", 0)
+        }
+        source_files = {
+            "deliveries": "ball_by_ball.csv",
+            "player_team_mapping": "competition_team_player_mapping.csv",
+            "competitions": "competitions.csv",
+            "matches": "matches.csv",
+            "playing_eleven": "playing_eleven.csv",
+            "teams": "teams.csv",
+        }
+        inventory = {}
+        for table, filename in source_files.items():
+            source_path = PROJECT_ROOT / "data" / "raw" / filename
+            if not source_path.is_file():
+                raise FileNotFoundError(f"Source data needed to rebuild the report: {source_path}")
+            inventory[table] = {
+                "table": table,
+                "filename": filename,
+                "rows": len(pd.read_csv(source_path, usecols=[0])),
+            }
+        states_path = None
+
+    if manifest.get("status") != "EXPLORATORY_COMPLETE":
+        raise ValueError(f"Run {run_id} is not marked EXPLORATORY_COMPLETE.")
+
+    exclusions = manifest.get("ranking_exclusions", {})
+    excluded_count = len(exclusions.get("player_ids", [])) or int(exclusions.get("player_count", 0))
     robustness = dashboard.get("robustness", {})
     robustness_source_run = dashboard.get("manifest", {}).get("robustness_source_run_id")
     summary = pressure.get("summary", {})
     match_count = summary.get("distinct_matches", "not recorded")
-    inventory = {row["table"]: row for row in manifest.get("data_manifest", [])}
     source_matches = int(inventory.get("matches", {}).get("rows", 0))
-    states = pd.read_parquet(
-        run_dir / "processed" / "pressure_states.parquet",
-        columns=["match_id", "pressure_score"],
-    )
-    state_match_count = int(states.loc[states["pressure_score"].notna(), "match_id"].nunique())
-    no_state_matches = max(source_matches - state_match_count, 0)
-    unresolved_match_count = max(state_match_count - int(match_count), 0)
+    if states_path is not None and states_path.is_file():
+        states = pd.read_parquet(
+            states_path,
+            columns=["match_id", "pressure_score"],
+        )
+        state_match_count = int(states.loc[states["pressure_score"].notna(), "match_id"].nunique())
+        no_state_matches = max(source_matches - state_match_count, 0)
+        unresolved_match_count = max(state_match_count - int(match_count), 0)
+    else:
+        state_match_count = None
+        no_state_matches = None
+        unresolved_match_count = None
     batter_leader = batter_top10.iloc[0]["player_name"]
     bowler_leader = bowler_top10.iloc[0]["player_name"]
     batter_ipl = batter_top10.loc[batter_top10["comparison_context"].eq("IPL")].head(1)
@@ -296,7 +332,7 @@ def build_brief(run_id: str) -> Path:
         ["Shrunk economy improvement", "+0.10", "Higher"],
         ["Consistency", "+0.05", "Higher"],
     ]
-    inventory_rows = [["Source CSV", "Rows in saved-run manifest"]]
+    inventory_rows = [["Source CSV", "Source rows"]]
     for table in (
         "deliveries",
         "player_team_mapping",
@@ -307,36 +343,55 @@ def build_brief(run_id: str) -> Path:
     ):
         row = inventory.get(table, {})
         inventory_rows.append([row.get("filename", table), f"{int(row.get('rows', 0)):,}"])
-    coverage_rows = [
+    coverage_rows: list[list[object]] = [
         ["Stage", "Count", "Reading"],
         [
             "Source matches.csv",
             f"{source_matches:,} rows / {source_matches:,} unique IDs",
             "Source table coverage.",
         ],
-        [
-            "IDs with pressure states",
-            f"{state_match_count:,}",
-            "Usable reconstructed states before winner filtering.",
-        ],
-        [
-            "Winner filtering",
-            f"{unresolved_match_count:,} matches removed",
-            "Undetermined winners excluded from ranking sample.",
-        ],
+    ]
+    if state_match_count is not None:
+        coverage_rows.extend(
+            [
+                [
+                    "IDs with pressure states",
+                    f"{state_match_count:,}",
+                    "Usable reconstructed states before winner filtering.",
+                ],
+                [
+                    "Winner filtering",
+                    f"{unresolved_match_count:,} matches removed",
+                    "Undetermined winners excluded from ranking sample.",
+                ],
+            ]
+        )
+    else:
+        unresolved_rows = dashboard.get("coverage", {}).get("unresolved_winner_rows", 0)
+        coverage_rows.append(
+            [
+                "Unresolved winner rows",
+                f"{int(unresolved_rows):,} delivery rows",
+                "Excluded from the ranking sample.",
+            ]
+        )
+    coverage_rows.append(
         [
             "Ranking sample",
             f"{int(match_count):,} match IDs",
-            "Resolved-winner matches in the saved ranking run.",
-        ],
-        [
-            "No usable states",
-            f"{no_state_matches:,} source IDs",
-            "No usable non-null pressure-state rows.",
-        ],
-    ]
+            "Resolved-winner matches in the filtered ranking.",
+        ]
+    )
+    if no_state_matches is not None:
+        coverage_rows.append(
+            [
+                "No usable states",
+                f"{no_state_matches:,} source IDs",
+                "No usable non-null pressure-state rows.",
+            ]
+        )
     key_findings = [
-        ["Area", "Saved-run readout"],
+        ["Area", "Filtered-run readout"],
         [
             "Batting leader",
             f"{batter_leader} leads the filtered batter composite; "
@@ -358,7 +413,7 @@ def build_brief(run_id: str) -> Path:
         Spacer(1, 0.18 * inch),
         Paragraph("Pressure performance<br/>and role-fit signals", styles["Title"]),
         Paragraph(
-            "A methods-led historical review of the saved batting and bowling rankings, "
+            "A methods-led historical review of the filtered batting and bowling rankings, "
             "with 10 profiles in each discipline.",
             styles["Lead"],
         ),
@@ -389,8 +444,19 @@ def build_brief(run_id: str) -> Path:
         _table(key_findings, [1.35 * inch, available_width - 1.35 * inch], styles),
         Spacer(1, 0.2 * inch),
         Paragraph(
-            f"Saved analysis run {run_id} | completed {manifest.get('completed_at', '')[:10]}",
+            f"Filtered ranking run {run_id} | completed {manifest.get('completed_at', '')[:10]}",
             styles["BodyText"],
+        ),
+        *(
+            [
+                Paragraph(
+                    "Original run artifacts were removed after initial report publication. "
+                    "This copy was rebuilt from the committed dashboard snapshot.",
+                    styles["BodyText"],
+                )
+            ]
+            if not run_artifacts_available
+            else []
         ),
         Spacer(1, 0.1 * inch),
         Paragraph(
@@ -886,36 +952,41 @@ def build_brief(run_id: str) -> Path:
     )
     document.build(story, onFirstPage=_page_chrome, onLaterPages=_page_chrome)
 
-    results_pdf = run_dir / "final_results.pdf"
-    write_results_pdf(
-        results_pdf,
-        batter_top10=batter_top10,
-        bowler_top10=bowler_top10,
-        run_metadata={
-            "run_id": manifest["run_id"],
-            "config_version": manifest["config_version"],
-            "data_fingerprint": manifest["data_fingerprint"],
-            "random_seed": manifest["random_seed"],
-            "analysis_mode": manifest["analysis_mode"],
-        },
-        pressure_validation=pressure,
-        ranking_exclusion_note=(
-            f"{excluded_count} player IDs mapped to Pakistan or Pakistan A squads were "
-            "excluded from ranking candidates. The source has no nationality field; squad "
-            "membership is used as the available proxy."
-        ),
-    )
     SITE_REPORTS.mkdir(parents=True, exist_ok=True)
     shutil.copy2(BRIEF_PATH, SITE_REPORTS / BRIEF_PATH.name)
-    shutil.copy2(results_pdf, SITE_REPORTS / "final_results.pdf")
+    if run_artifacts_available:
+        results_pdf = run_dir / "final_results.pdf"
+        write_results_pdf(
+            results_pdf,
+            batter_top10=batter_top10,
+            bowler_top10=bowler_top10,
+            run_metadata={
+                "run_id": manifest["run_id"],
+                "config_version": manifest["config_version"],
+                "data_fingerprint": manifest["data_fingerprint"],
+                "random_seed": manifest["random_seed"],
+                "analysis_mode": manifest["analysis_mode"],
+            },
+            pressure_validation=pressure,
+            ranking_exclusion_note=(
+                f"{excluded_count} player IDs mapped to Pakistan or Pakistan A squads were "
+                "excluded from ranking candidates. The source has no nationality field; squad "
+                "membership is used as the available proxy."
+            ),
+        )
+        shutil.copy2(results_pdf, SITE_REPORTS / "final_results.pdf")
     return BRIEF_PATH
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build and publish the brief and results PDFs for a saved run."
+        description="Build the brief and, when run artifacts exist, the results PDF."
     )
-    parser.add_argument("--run-id", required=True, help="Completed exploratory run ID.")
+    parser.add_argument(
+        "--run-id",
+        required=True,
+        help="Completed run ID with either run artifacts or a matching dashboard snapshot.",
+    )
     args = parser.parse_args()
     output = build_brief(args.run_id)
     print(f"Built {output.relative_to(PROJECT_ROOT)} and copied both PDFs to site/reports.")
