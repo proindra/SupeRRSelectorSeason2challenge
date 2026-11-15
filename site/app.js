@@ -610,8 +610,7 @@ function renderInsights() {
   }).join("");
   pageRoot.innerHTML = `
     ${heading("More Insights", "Pressure-performance leaders and repeatability signals from the saved rankings.")}
-    <div class="grid grid-3">${renderOverviewInsightCards(overview)}</div>
-    <div class="grid grid-3">${cards}</div>
+    <div class="grid grid-3">${renderOverviewInsightCards(overview)}${cards}</div>
     <div class="callout blue" style="margin-top:18px"><strong>Reading note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
 }
 
