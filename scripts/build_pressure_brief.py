@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 from collections.abc import Sequence
 from datetime import datetime
 from html import escape
@@ -22,7 +21,6 @@ from suprr.exports import write_results_pdf
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RUNS_ROOT = PROJECT_ROOT / "artifacts" / "exploratory"
 BRIEF_PATH = PROJECT_ROOT / "artifacts" / "briefs" / "rr_ipl_2027_pressure_brief.pdf"
-SITE_REPORTS = PROJECT_ROOT / "site" / "reports"
 NAVY = colors.HexColor("#171B2C")
 PINK = colors.HexColor("#E91E8C")
 PALE = colors.HexColor("#F3F5F9")
@@ -961,8 +959,6 @@ def build_brief(run_id: str) -> Path:
     )
     document.build(story, onFirstPage=_page_chrome, onLaterPages=_page_chrome)
 
-    SITE_REPORTS.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(BRIEF_PATH, SITE_REPORTS / BRIEF_PATH.name)
     if run_artifacts_available:
         results_pdf = run_dir / "final_results.pdf"
         write_results_pdf(
@@ -997,7 +993,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     output = build_brief(args.run_id)
-    print(f"Built {output.relative_to(PROJECT_ROOT)} and copied the brief to site/reports.")
+    print(f"Built {output.relative_to(PROJECT_ROOT)}.")
 
 
 if __name__ == "__main__":
