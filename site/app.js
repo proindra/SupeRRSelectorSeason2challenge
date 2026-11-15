@@ -398,16 +398,16 @@ function renderRankingPage(role, technical = false) {
 
 function renderOverview() {
   const overview = getOverviewInsights();
-  const runArtifactsNote = dashboardData.manifest.run_artifacts_removed_after_publication
-    ? "<br>Original run artifacts were removed after publication; this filtered snapshot remains available here."
-    : "";
+  const exclusionCount = Number(dashboardData.manifest.ranking_exclusions?.player_count || 0);
 
   pageRoot.innerHTML = `
     <section class="hero">
       <div class="eyebrow">SUPERR SELECTOR · RAJASTHAN ROYALS SCOUTING</div>
       <h1>RR 2027 Auction Pressure Profiles</h1>
       <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings use configured assumptions; player availability is not modeled.</p>
-      <div class="hero-meta">Filtered ranking snapshot ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}${runArtifactsNote}</div>
+    </section>
+    <section class="callout blue overview-note">
+      <strong>Availability notes:</strong> Retention lists are due on 17 November 2026 and the final auction list on 3 December 2026, so retained and released status is unconfirmed as of 15 November 2026. Eligibility filter: ${integer(exclusionCount)} player IDs mapped to Pakistan or Pakistan A squads are excluded from ranking candidates. The source has no nationality field, so squad membership is the available proxy; source and match records are retained. Public reports say Pakistan players have not played in the IPL since 2008. Check each player's status against the final list before acting on any name.
     </section>
     ${renderOverviewSignals(overview)}
   `;

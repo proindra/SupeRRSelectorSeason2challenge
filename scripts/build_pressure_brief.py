@@ -465,6 +465,15 @@ def build_brief(run_id: str) -> Path:
             "so squad membership is the available proxy; source and match records are retained.",
             styles["BodyText"],
         ),
+        Paragraph("Availability notes", styles["SectionHeading"]),
+        Paragraph(
+            "Retention lists are due on 17 November 2026 and the final auction list on "
+            "3 December 2026, so retained and released status is unconfirmed as of this brief "
+            "(15 November 2026). Public reports say Pakistan players have not played in the IPL "
+            "since 2008. Check each player's status against the final list before acting on any "
+            "name.",
+            styles["BodyText"],
+        ),
         Paragraph(
             "EXPLORATORY only. This brief is not affiliated with or endorsed by Rajasthan Royals.",
             styles["BodyText"],
