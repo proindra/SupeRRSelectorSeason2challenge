@@ -383,6 +383,21 @@ function renderRankingPage(role, technical = false) {
 }
 
 function renderOverview() {
+  const overview = getOverviewInsights();
+
+  pageRoot.innerHTML = `
+    <section class="hero">
+      <span class="exploratory-pill">EXPLORATORY ANALYSIS</span>
+      <div class="eyebrow">SUPERR SELECTOR · RAJASTHAN ROYALS SCOUTING</div>
+      <h1>RR 2027 Auction Pressure Profiles</h1>
+      <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings are exploratory; player availability is not modeled.</p>
+      <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
+    </section>
+    ${renderOverviewSignals(overview)}
+  `;
+}
+
+function getOverviewInsights() {
   const batterRows = dashboardData.rankings.batter.full;
   const bowlerRows = dashboardData.rankings.bowler.full;
   const rankedBatters = batterRows.filter((row) => isNumeric(row.rank) && Number(row.rank) >= 1);
@@ -397,14 +412,28 @@ function renderOverview() {
   const iplBowlerRepeat = getIplRepeatProfile("bowler");
   const gradient = dashboardData.pressure_validation.outcome_gradient;
 
-  pageRoot.innerHTML = `
-    <section class="hero">
-      <span class="exploratory-pill">EXPLORATORY ANALYSIS</span>
-      <div class="eyebrow">SUPERR SELECTOR · RAJASTHAN ROYALS SCOUTING</div>
-      <h1>RR 2027 Auction Pressure Profiles</h1>
-      <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings are exploratory; player availability is not modeled.</p>
-      <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
-    </section>
+  return {
+    batterTop,
+    bowlerTop,
+    fastest,
+    tightest,
+    iplBatterRepeat,
+    iplBowlerRepeat,
+    gradient
+  };
+}
+
+function renderOverviewSignals(overview) {
+  const {
+    batterTop,
+    bowlerTop,
+    fastest,
+    tightest,
+    iplBatterRepeat,
+    iplBowlerRepeat,
+    gradient
+  } = overview;
+  return `
     ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
     <div class="grid grid-2 overview-profile-grid">
       ${renderOverviewProfile("batter", batterTop, iplBatterRepeat)}
@@ -483,6 +512,7 @@ function renderOverviewProfile(role, overallLeader, iplRepeat) {
 function renderInsights() {
   const batterRows = dashboardData.rankings.batter.top10;
   const bowlerRows = dashboardData.rankings.bowler.top10;
+  const overview = getOverviewInsights();
   const leaders = [
     { label: "Most pressure runs", rows: batterRows, metric: "pressure_runs", role: "Batter", max: true },
     { label: "Highest pressure strike rate", rows: batterRows, metric: "pressure_strike_rate", role: "Batter", max: true },
@@ -507,7 +537,9 @@ function renderInsights() {
       </section>`;
   }).join("");
   pageRoot.innerHTML = `
-    ${heading("More Insights", "Quick, descriptive leaders drawn only from the saved Top 10 batter and bowler lists.")}
+    ${heading("More Insights", "Overview scouting signals plus additional leaders from the saved Top 10 lists.")}
+    ${renderOverviewSignals(overview)}
+    ${sectionTitle("Top 10 metric leaders", "Descriptive leaders within the saved batter and bowler Top 10 lists")}
     <div class="grid grid-3">${cards}</div>
     <div class="callout blue" style="margin-top:18px"><strong>Reading note:</strong> These comparisons are descriptive. Differences in competition, sample size, role, and source assumptions should be considered before making selection decisions.</div>`;
 }
