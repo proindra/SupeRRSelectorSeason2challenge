@@ -446,21 +446,12 @@ function renderOverviewSignals(overview) {
     iplBatterRepeat,
     iplBowlerRepeat
   } = overview;
-  const robustnessSourceRun = dashboardData.manifest.robustness_source_run_id;
-  const exclusionCount = Number(dashboardData.manifest.ranking_exclusions?.player_count || 0);
-  const reusedRobustnessNote = robustnessSourceRun
-    && robustnessSourceRun !== dashboardData.manifest.run_id
-    ? ` Repeatability figures come from older run ${escapeHtml(robustnessSourceRun)}. Excluded-player rows were omitted, but the values were not recalculated for the filtered ranking population.`
-    : "";
   return `
     ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
     <div class="grid grid-2 overview-profile-grid">
       ${renderOverviewProfile("batter", batterTop, iplBatterRepeat)}
       ${renderOverviewProfile("bowler", bowlerTop, iplBowlerRepeat)}
     </div>
-    <section class="callout blue overview-note">
-      <strong>Ranking and repeatability provenance:</strong> the filtered ranking snapshot is from run ${escapeHtml(dashboardData.manifest.run_id)}; ${integer(exclusionCount)} Pakistan/Pakistan A squad-mapped player IDs were excluded. The repeat signal is limited to IPL-only profiles in the filtered Top 10.${reusedRobustnessNote} Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.
-    </section>
     ${sectionTitle("Other metric leaders", "Descriptive leaders from saved full rankings")}
     <div class="grid grid-2">
       <section class="card">
@@ -880,6 +871,12 @@ function renderQuality() {
   const exclusions = quality.confirmed_exclusions || {};
   const superOvers = exclusions.super_overs || {};
   const revised = exclusions.revised_conditions || {};
+  const robustnessSourceRun = dashboardData.manifest.robustness_source_run_id;
+  const exclusionCount = Number(dashboardData.manifest.ranking_exclusions?.player_count || 0);
+  const reusedRobustnessNote = robustnessSourceRun
+    && robustnessSourceRun !== dashboardData.manifest.run_id
+    ? ` Repeatability figures come from older run ${escapeHtml(robustnessSourceRun)}. Excluded-player rows were omitted, but the values were not recalculated for the filtered ranking population.`
+    : "";
   pageRoot.innerHTML = `
     ${heading("Data Quality & Methodology", "Source evidence, limitations, and exclusions retained with the saved run.")}
     <div class="callout"><strong>Audit scope:</strong> findings are diagnostics and do not gate the saved rankings. Scoring assumptions remain unconfirmed.</div>
@@ -938,6 +935,9 @@ function renderQuality() {
         <div class="metric-item"><span>Pressure assessment</span><strong>${escapeHtml(dashboardData.manifest.pressure_validation.status || "—")}</strong></div>
       </div>
       <button class="button secondary" id="download-audit-json" style="margin-top:15px">Download published diagnostics JSON</button>
+    </section>
+    <section class="callout blue" style="margin-top:16px">
+      <strong>Ranking and repeatability provenance:</strong> the filtered ranking snapshot is from run ${escapeHtml(dashboardData.manifest.run_id)}; ${integer(exclusionCount)} Pakistan/Pakistan A squad-mapped player IDs were excluded. The repeat signal is limited to IPL-only profiles in the filtered Top 10.${reusedRobustnessNote} Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.
     </section>
     <p class="note">Only aggregate diagnostics, rankings, and match/phase profile summaries are included here; raw input CSVs and delivery-level records are not published.</p>`;
   document.getElementById("download-audit-json").addEventListener("click", () => {
