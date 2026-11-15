@@ -193,7 +193,34 @@ def _safe_quality(report_dir: Path) -> dict[str, Any]:
     }
 
 
-def _optional_tables(run_dir: Path) -> dict[str, list[dict[str, Any]]]:
+def _has_repeatability_outputs(run_dir: Path) -> bool:
+    rankings_dir = run_dir / "rankings"
+    return all(
+        (rankings_dir / f"{role}_bootstrap_summary.csv").is_file()
+        for role in ("batter", "bowler")
+    )
+
+
+def _robustness_source_run(run_dir: Path) -> Path | None:
+    if _has_repeatability_outputs(run_dir):
+        return run_dir
+
+    candidates: list[tuple[str, Path]] = []
+    for candidate in RUNS_ROOT.iterdir():
+        manifest_path = candidate / "reports" / "run_manifest.json"
+        if candidate == run_dir or not manifest_path.is_file():
+            continue
+        manifest = _read_json(manifest_path)
+        if manifest.get("status") != "EXPLORATORY_COMPLETE":
+            continue
+        if _has_repeatability_outputs(candidate):
+            candidates.append((str(manifest.get("completed_at", "")), candidate))
+    return max(candidates, default=(None, None), key=lambda item: item[0])[1]
+
+
+def _optional_tables(
+    run_dir: Path, excluded_player_ids: set[str]
+) -> dict[str, list[dict[str, Any]]]:
     names = (
         "batter_sensitivity",
         "bowler_sensitivity",
@@ -204,11 +231,23 @@ def _optional_tables(run_dir: Path) -> dict[str, list[dict[str, Any]]]:
         "stability_adjusted_top10",
     )
     rankings_dir = run_dir / "rankings"
-    return {
-        name: rows
-        for name in names
-        if (rows := _records(rankings_dir / f"{name}.csv")) is not None
-    }
+    player_columns = {"striker_id", "bowler_id", "player_id", "adjusted_player_id"}
+    tables: dict[str, list[dict[str, Any]]] = {}
+    for name in names:
+        path = rankings_dir / f"{name}.csv"
+        if not path.is_file():
+            continue
+        frame = pd.read_csv(path)
+        excluded_rows = pd.Series(False, index=frame.index)
+        for column in player_columns.intersection(frame.columns):
+            player_ids = frame[column].astype("string").str.replace(r"\.0$", "", regex=True)
+            excluded_rows |= player_ids.isin(excluded_player_ids)
+        records = _records(path) if not excluded_rows.any() else None
+        if records is None:
+            frame = frame.loc[~excluded_rows]
+            records = json.loads(frame.to_json(orient="records", date_format="iso"))
+        tables[name] = records
+    return tables
 
 
 def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
@@ -219,6 +258,10 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         (PROJECT_ROOT / "config" / "default.yaml").read_text(encoding="utf-8")
     )
     excluded_player_ids = set(manifest.get("ranking_exclusions", {}).get("player_ids", []))
+    robustness_run = _robustness_source_run(run_dir)
+    robustness = (
+        _optional_tables(robustness_run, excluded_player_ids) if robustness_run else {}
+    )
     return {
         "manifest": {
             "run_id": manifest.get("run_id", run_dir.name),
@@ -233,6 +276,9 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
                     manifest.get("ranking_exclusions", {}).get("player_ids", [])
                 ),
             },
+            "robustness_source_run_id": (
+                robustness_run.name if robustness_run is not None else None
+            ),
             "pressure_validation": {
                 "status": pressure.get("status"),
                 "passed": pressure.get("passed"),
@@ -257,7 +303,7 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
             "bowler": _profile_rows(states, "bowler", excluded_player_ids),
         },
         "quality": _safe_quality(report_dir),
-        "robustness": _optional_tables(run_dir),
+        "robustness": robustness,
     }
 
 

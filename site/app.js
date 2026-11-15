@@ -431,6 +431,11 @@ function renderOverviewSignals(overview) {
     iplBatterRepeat,
     iplBowlerRepeat
   } = overview;
+  const robustnessSourceRun = dashboardData.manifest.robustness_source_run_id;
+  const reusedRobustnessNote = robustnessSourceRun
+    && robustnessSourceRun !== dashboardData.manifest.run_id
+    ? ` Repeatability figures are reused from saved robustness run ${escapeHtml(robustnessSourceRun)}; they were not recalculated for the current player exclusion.`
+    : "";
   return `
     ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
     <div class="grid grid-2 overview-profile-grid">
@@ -438,7 +443,7 @@ function renderOverviewSignals(overview) {
       ${renderOverviewProfile("bowler", bowlerTop, iplBowlerRepeat)}
     </div>
     <section class="callout blue overview-note">
-      <strong>How to read this:</strong> the overall composite ranking combines comparison contexts; the repeat signal is filtered to IPL-only profiles in the saved Top 10. Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.
+      <strong>How to read this:</strong> the overall composite ranking combines comparison contexts; the repeat signal is filtered to IPL-only profiles in the saved Top 10. Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.${reusedRobustnessNote}
     </section>
     ${sectionTitle("Other metric leaders", "Descriptive leaders from saved full rankings")}
     <div class="grid grid-2">

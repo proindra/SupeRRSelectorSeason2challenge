@@ -141,6 +141,11 @@ pipeline, bootstrap, sensitivity, or scenario validation. The PDF command refres
 `artifacts\briefs\rr_ipl_2027_pressure_brief.pdf` and the downloadable PDFs in `site\reports\`.
 Commit the updated `site\` files to publish the new snapshot and reports. To preview locally:
 
+If a selected ranking run has no bootstrap summaries, the dashboard reuses the most recent
+completed run's robustness CSVs for repeatability signals, filters excluded player IDs, and
+records the source run ID. Those reused frequencies are historical and are not recalculated for
+the current ranking population.
+
 ```powershell
 uv run python -m http.server 8000 --directory site
 ```
