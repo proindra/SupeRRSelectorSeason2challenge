@@ -386,13 +386,16 @@ function renderRankingPage(role, technical = false) {
 
 function renderOverview() {
   const overview = getOverviewInsights();
+  const runArtifactsNote = dashboardData.manifest.run_artifacts_removed_after_publication
+    ? "<br>Original run artifacts were removed after publication; this filtered snapshot remains available here."
+    : "";
 
   pageRoot.innerHTML = `
     <section class="hero">
       <div class="eyebrow">SUPERR SELECTOR · RAJASTHAN ROYALS SCOUTING</div>
       <h1>RR 2027 Auction Pressure Profiles</h1>
       <p>Explore historical high-pressure T20 results as conditional scouting evidence. Rankings use configured assumptions; player availability is not modeled.</p>
-      <div class="hero-meta">Saved run ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</div>
+      <div class="hero-meta">Filtered ranking snapshot ${escapeHtml(dashboardData.manifest.run_id)} · Completed ${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}${runArtifactsNote}</div>
     </section>
     ${renderOverviewSignals(overview)}
   `;
@@ -432,9 +435,10 @@ function renderOverviewSignals(overview) {
     iplBowlerRepeat
   } = overview;
   const robustnessSourceRun = dashboardData.manifest.robustness_source_run_id;
+  const exclusionCount = Number(dashboardData.manifest.ranking_exclusions?.player_count || 0);
   const reusedRobustnessNote = robustnessSourceRun
     && robustnessSourceRun !== dashboardData.manifest.run_id
-    ? ` Repeatability figures are reused from saved robustness run ${escapeHtml(robustnessSourceRun)}; they were not recalculated for the current player exclusion.`
+    ? ` Repeatability figures come from older run ${escapeHtml(robustnessSourceRun)}. Excluded-player rows were omitted, but the values were not recalculated for the filtered ranking population.`
     : "";
   return `
     ${sectionTitle("RR auction lens", "Overall leaders beside IPL-only repeat signals")}
@@ -443,7 +447,7 @@ function renderOverviewSignals(overview) {
       ${renderOverviewProfile("bowler", bowlerTop, iplBowlerRepeat)}
     </div>
     <section class="callout blue overview-note">
-      <strong>How to read this:</strong> the overall composite ranking combines comparison contexts; the repeat signal is filtered to IPL-only profiles in the saved Top 10. Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.${reusedRobustnessNote}
+      <strong>Ranking and repeatability provenance:</strong> the filtered ranking snapshot is from run ${escapeHtml(dashboardData.manifest.run_id)}; ${integer(exclusionCount)} Pakistan/Pakistan A squad-mapped player IDs were excluded. The repeat signal is limited to IPL-only profiles in the filtered Top 10.${reusedRobustnessNote} Bootstrap frequency measures ranking repeatability in resampled matches, not a forecast or auction-availability signal. Confirm RR's squad need and the official 2027 player pool before treating any profile as a target.
     </section>
     ${sectionTitle("Other metric leaders", "Descriptive leaders from saved full rankings")}
     <div class="grid grid-2">
@@ -906,7 +910,9 @@ function renderQuality() {
       <hr class="section-divider">
       <h3>Run provenance</h3>
       <div class="metric-list">
-        <div class="metric-item"><span>Run ID</span><strong>${escapeHtml(dashboardData.manifest.run_id)}</strong></div>
+        <div class="metric-item"><span>Ranking snapshot run ID</span><strong>${escapeHtml(dashboardData.manifest.run_id)}</strong></div>
+        <div class="metric-item"><span>Repeatability source run ID</span><strong>${escapeHtml(dashboardData.manifest.robustness_source_run_id || "Not reused")}</strong></div>
+        <div class="metric-item"><span>Local run artifacts</span><strong>${dashboardData.manifest.run_artifacts_removed_after_publication ? "Removed after publication" : "Available when snapshot was built"}</strong></div>
         <div class="metric-item"><span>Completed</span><strong>${escapeHtml(dateLabel(dashboardData.manifest.completed_at))}</strong></div>
         <div class="metric-item"><span>Configuration version</span><strong>${escapeHtml(dashboardData.manifest.config_version || "—")}</strong></div>
         <div class="metric-item"><span>Pressure assessment</span><strong>${escapeHtml(dashboardData.manifest.pressure_validation.status || "—")}</strong></div>

@@ -279,6 +279,7 @@ def build_payload(run_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
             "robustness_source_run_id": (
                 robustness_run.name if robustness_run is not None else None
             ),
+            "run_artifacts_removed_after_publication": False,
             "pressure_validation": {
                 "status": pressure.get("status"),
                 "passed": pressure.get("passed"),

@@ -11,6 +11,7 @@
       "player_count": 68
     },
     "robustness_source_run_id": "0f34cc9f-0001-4a7b-bb8f-d4bfe41b70d4",
+    "run_artifacts_removed_after_publication": true,
     "pressure_validation": {
       "status": "PASS",
       "passed": true
